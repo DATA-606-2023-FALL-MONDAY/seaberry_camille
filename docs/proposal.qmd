@@ -22,9 +22,7 @@ The major purposes of those two papers involved mapping the locations of cameras
 
 ## Data & EDA
 
-Source notebook: [./00_eda.ipynb](./00_eda.ipynb)
-
-{{< embed ./00_eda.ipynb echo=true >}}
+See notebook: [./00_eda.ipynb](./00_eda.ipynb)
 
 ## References
 
