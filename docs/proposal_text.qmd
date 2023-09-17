@@ -1,0 +1,30 @@
+---
+title: Proposal
+format: gfm
+bibliography: references.bib
+engine: jupyter
+---
+
+# Re-surveilling surveillance, Camille Seaberry
+
+Prepared for UMBC Data Science Master Degree Capstone with Dr. Chaojie Wang
+
+- https://github.com/camille-s
+
+    
+## Background
+
+Police surveillance cameras in Baltimore---many of which are situated at street intersections that make up a spatial network by which people move through the city---form one of many layers of state surveillance imporsed upon residents. These cameras are often clearly visible at a distance, unlike less obvious layers operated by wannabe-state actor-vendors like Amazon (private Ring cameras subsidized by Amazon and distributed by police departments such as Baltimore) or Axon (with a monopoly over body-worn cameras, a band aid offered to counter police violence, and Tasers, a "less-lethal" potentially lethal high-tech weapon). This visibility, sometimes including blaringly bright blue lights, creates an announcement of the fact of being watched. Yet there is little documentation and even less direct control or oversight of this landscape, and even crowdsourced data sources like OpenStreetMap have very little of this landscape recorded. These histories are laid out in research such as @Browne2015.
+
+I would like to build upon my final project in Data 690: Deep Learning (Spring 2023). I attempted to recreate aspects of two papers (@T.C.L+2021a; and @S.Y.G2021). Both of these papers train deep learning models on several thousand photos of urban streetscapes, including those batch downloaded from Google Street View. @S.Y.G2021 make their download script available, and use Baltimore as one of their test cities, so I was able to use a sample of their images directly. In addition, I used the Objects365 dataset (@S.L.Z+2019), the only one of the standard image datasets I could find that specifically had surveillance cameras annotated. Using these images and a few predefined models from Facebook Research's Detectron2 library (@detectron), I trained several neural networks to identify the locations of surveillance cameras in these images. With some success, I then developed models with PyTorch to categorize cameras as directed or global, an additional annotation in the @S.Y.G2021 dataset.
+
+The major purposes of those two papers involved mapping the locations of cameras after detecting them. Because the Street View images can be downloaded based on their coordinates, once a camera is detected in an image, its location is known. For my capstone, I have two major goals: 1) improving upon the models I used, including introduction of more predefined models (adding YOLO, among others), finer tuning of classification of camera type (including possibly adding automated license plate readers), more concerted sampling of intersections in Baltimore, and updated images; and 2) mapping of those locations to study the landscape of that layer of surveillance. If possible, my third goal would be some amount of spatial analysis overlaying camera locations and socio-economic / demographic data to understand any patterns in this landscape and the potential burdens of surveillance on marginalized communities in Baltimore.
+
+## Data & EDA
+
+Source notebook: [./00_eda.ipynb](./00_eda.ipynb)
+
+{{< embed ./00_eda.ipynb echo=true >}}
+
+## References
+
