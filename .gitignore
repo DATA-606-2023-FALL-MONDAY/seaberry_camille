@@ -45,3 +45,6 @@ venv.bak/
 
 # don't include jpgs for now
 data/**/*.jpg
+/.luarc.json
+
+**/cache

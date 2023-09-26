@@ -1,6 +1,5 @@
-# Proposal
-
-# Re-surveilling surveillance, Camille Seaberry
+# Proposal: Re-surveilling surveillance
+Camille Seaberry
 
 Prepared for UMBC Data Science Master Degree Capstone with Dr. Chaojie
 Wang
@@ -45,25 +44,158 @@ Goel (2021) dataset.
 The major purposes of those two papers involved mapping the locations of
 cameras after detecting them. Because the Street View images can be
 downloaded based on their coordinates, once a camera is detected in an
-image, its location is known. For my capstone, I have two major
-goals: 1) improving upon the models I used, including introduction of
-more predefined models (adding YOLO, among others), finer tuning of
-classification of camera type (including possibly adding automated
-license plate readers), more concerted sampling of intersections in
-Baltimore, and updated images; and 2) mapping of those locations to
-study the landscape of that layer of surveillance. If possible, my third
-goal would be some amount of spatial analysis overlaying camera
-locations and socio-economic / demographic data to understand any
-patterns in this landscape and the potential burdens of surveillance on
-marginalized communities in Baltimore.
+image, its location is known.
 
-## Data & EDA
+For my capstone, I have **two major goals:**
 
-See notebook: [./00_eda.ipynb](./00_eda.ipynb)
+1.  Improving upon the models I used, including introduction of more
+    predefined models (adding YOLO, among others), finer tuning of
+    classification of camera type (including possibly adding automated
+    license plate readers), more concerted sampling of intersections in
+    Baltimore, and updated images
+2.  Mapping of those locations to study the landscape of that layer of
+    surveillance. In the longer term, I would like to do some amount of
+    spatial analysis overlaying camera locations and socio-economic /
+    demographic data to understand any patterns in this landscape and
+    the potential burdens of surveillance on marginalized communities in
+    Baltimore.
+
+Therefore my **major research questions are:**
+
+1.  How accurately can deep learning models detect surveillance cameras
+    in street images?
+2.  How accurately can deep learning models classify types of
+    surveillance cameras?
+3.  What spatial patterns exist in where surveillance cameras are
+    located?
+
+## Data
+
+This project uses several non-tabular data sources. As the main part of
+this project is object detection in images, the images’ pixel data will
+become the features. In the first task (detection), the target is the
+bounding box of the detected camera. In the second (classification), the
+target is the category of camera.
+
+If I decide to do spatial analysis once I have locations of cameras from
+a sample of intersections, the target would be presence / density of
+cameras, with geographic coordinates as the features (spatial
+regression, kriging, or other spatial modeling methods).
+
+### Images
+
+There are two sets of images, full-sized images and cropped images. The
+cropped images were made in Roboflow by cropping the full-sized images
+to their objects’ bounding boxes. Metadata are in COCO JSON format, with
+metadata about the date of upload to Roboflow, licenses, categories,
+images, and annotations. Of these, I am using the data on images and
+annotations. Alongside this metadata are the folders of images.
+
+#### Source
+
+Sheng, Yao, and Goel (2021) and Shao et al. (2019), with metadata
+standardized on the Roboflow platform.
+
+#### Size (jpg files)
+
+- Full-size images: training, testing, and validation sets are 495MB,
+  28.6MB, and 53.2MB, respectively
+- Cropped images: training, testing, and validation sets are 1.1MB,
+  356kB, and 994kB, respectively
+
+#### Dimensions after cleaning
+
+- Annotations: 5,655 rows x 6 columns (2 indices)
+- Image metadata: 3,557 rows x 6 columns (2 indices)
+
+#### Time period
+
+N/A
+
+#### Data dictionary
+
+##### Annotations
+
+One row = one marked camera
+
+| Name        | Data type      | Definition                                           | Values                                                                     | Use                                         |
+|-------------|----------------|------------------------------------------------------|----------------------------------------------------------------------------|---------------------------------------------|
+| type        | String (index) | Image type: full-size vs cropped image               | “full”, ‘crop’                                                             |                                             |
+| id          | Int (index)    | Numeric ID marking the annotation within image types | 0-(number of rows by type)                                                 |                                             |
+| image_id    | Int            | Numeric ID of corresponding image                    | 0-(number of images)                                                       |                                             |
+| category_id | Int            | Numeric category of camera type                      | 1: directed; 2: globe; 3: no classification (Objects365)                   | Target for classification of cropped images |
+| bbox        | List of 4 ints | Bounding box of camera within image                  | Coordinates of top-left corner w/r/t image, width & height of bounding box | Target for object detection                 |
+| area        | Float          | Area of the bounding box                             |                                                                            |                                             |
+
+##### Images
+
+One row = one image
+
+| Name          | Data type      | Definition                                      | Values                     | Use                                                               |
+|---------------|----------------|-------------------------------------------------|----------------------------|-------------------------------------------------------------------|
+| type          | String (index) | Image type: full-size vs cropped image          | “full”, “crop”             |                                                                   |
+| id            | Int (index)    | Numeric ID marking the image within image types | 0-(number of rows by type) | After reading from this file, pixel data tensors will be features |
+| file_name     | String         | File name to read image                         |                            |                                                                   |
+| height        | Int            | Height of image                                 |                            |                                                                   |
+| width         | Int            | Width of image                                  |                            |                                                                   |
+| date_captured | Datetime       | Date of upload to Roboflow                      | Currently all May 2023     |                                                                   |
+
+### Street network
+
+If I get models working well on detecting and classifying cameras in
+these older images, I’d like to create a set of new up-to-date images
+from Google Street View. To do this, following the methodology in Sheng,
+Yao, and Goel (2021), I will sample intersections from a network of
+Baltimore streets to get coordinates at which to batch download Street
+View images using Google’s API. After cleaning, the result is a
+geopandas GeoDataFrame of coordinates of street intersections extracted
+from the network.
+
+#### Source
+
+Road network geography data comes from OpenStreetMap via the OSMnx
+package (Boeing (2017)).
+
+#### Size
+
+- Full network, geopackage file: 36MB (not used for analysis)
+- Intersection coordinates, geopackage file: 3.8MB
+
+#### Dimensions after cleaning
+
+24,274 rows x 4 columns
+
+#### Time period
+
+N/A
+
+#### Data dictionary
+
+One row = one intersection node
+
+| Name     | Data type | Definition                         | Values | Use                           |
+|----------|-----------|------------------------------------|--------|-------------------------------|
+| id       | Int       | ID from the OpenStreetMap database |        |                               |
+| lon      | Float     | Longitude coordinate               | ~-76   | Use for Street View API calls |
+| lat      | Float     | Latitude coordinate                | ~39    | Use for Street View API calls |
+| geometry | Point     | GeoSeries of coordinates           |        | Use for spatial analysis      |
+
+## EDA
+
+See notebook: [./eda.ipynb](./eda.ipynb)
 
 ## References
 
 <div id="refs" class="references csl-bib-body hanging-indent">
+
+<div id="ref-Boeing2017" class="csl-entry">
+
+Boeing, Geoff. 2017. “OSMnx: New Methods for Acquiring, Constructing,
+Analyzing, and Visualizing Complex Street Networks.” *Computers,
+Environment and Urban Systems* 65 (September): 126–39.
+<https://doi.org/10.1016/j.compenvurbsys.2017.05.004>.
+
+</div>
 
 <div id="ref-Browne2015" class="csl-entry">
 
