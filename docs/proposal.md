@@ -182,7 +182,7 @@ One row = one intersection node
 
 ## EDA
 
-See notebook: [./eda.ipynb](./eda.ipynb)
+See notebook: [../src/eda.ipynb](../src/eda.ipynb)
 
 ## References
 
