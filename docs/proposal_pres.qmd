@@ -1,0 +1,165 @@
+---
+title: "Proposal: Re-surveilling surveillance"
+author: Camille Seaberry
+format: 
+  revealjs: 
+    theme: dark
+bibliography: references.bib
+engine: jupyter
+scrollable: true
+---
+
+# Background
+
+## Problem
+
+* Police surveillance cameras in Baltimore form one of many layers of state surveillance imposed upon residents.
+* Supported by tech platforms and vendors
+* Little documentation, control, or oversight of surveillance landscape
+* Extensive research into history in @Browne2015
+
+## Project
+
+* I attempted to recreate aspects of two papers (@T.C.L+2021a; and @S.Y.G2021) in Data 690: Deep Learning (Spring 2023). 
+* Both papers train deep learning models on urban streetscapes
+  - Downloads from Google Street View
+  - Objects365 dataset
+* Because the Street View images can be downloaded based on their coordinates, once a camera is detected in an image, its location is known.
+
+## Tasks
+
+Using neural nets:
+
+* Identify cameras in images (object detection)
+* Categorize camera types once detected (classification)
+
+## Goals
+
+* Improve upon / expand on models I built before 
+* Map locations of cameras for spatial analysis
+
+## Research questions
+
+1. How accurately can deep learning models detect surveillance cameras in street images?
+2. How accurately can deep learning models classify types of surveillance cameras?
+3. What spatial patterns exist in where surveillance cameras are located?
+
+# Data
+
+## Images
+
+Two sets of images, each organized into training, testing, validation splits:
+
+* Full-sized images---full street scenes
+* Cropped images---just camera based on bounding box
+
+## Images
+
+Two types of metadata in COCO JSON format:
+
+* Annotations: one per marked camera
+* Image metadata: one per image (may contain multiple cameras)
+
+{{< embed ../src/eda.ipynb#coco >}}
+
+## Examples
+
+::: {#ex-imgs layout-ncol=2}
+
+{{< embed ../src/eda.ipynb#ex-img >}}
+
+{{< embed ../src/eda.ipynb#crops >}}
+
+:::
+
+## Images {.smaller}
+
+### Source 
+
+@S.Y.G2021 and @S.L.Z+2019, with metadata standardized on the Roboflow platform.
+
+### Size (jpg files)
+
+* Full-size images: training, testing, and validation sets are 495MB, 28.6MB, and 53.2MB, respectively
+* Cropped images: training, testing, and validation sets are 1.1MB, 356kB, and 994kB, respectively
+
+### Dimensions after cleaning
+
+* Annotations: 5,655 rows x 6 columns (2 indices)
+* Image metadata: 3,557 rows x 6 columns (2 indices)
+
+
+## Data dictionary {.smaller .scrollable}
+
+### Annotations
+
+One row = one marked camera
+
+| Name        | Data type      | Definition                                        | Values                                                             | Use                                         |
+| ----------- | -------------- | ------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------- |
+| type        | String (index) | Image type: full-size vs cropped image          | "full", 'crop'                                                             |                                             |
+| id          | Int (index)    | Numeric ID marking the annotation within image types                 | 0-(number of rows by type)                                                 |                                             |
+| image_id    | Int            | Numeric ID of corresponding image | 0-(number of images)                                                       |                                             |
+| category_id | Int            | Numeric category of camera type                   | 1: directed; 2: globe; 3: no classification (Objects365)                   | Target for classification of cropped images |
+| bbox        | List of 4 ints | Bounding box of camera within image               | Coordinates of top-left corner w/r/t image, width & height of bounding box | Target for object detection                 |
+| area        | Float          | Area of the bounding box                          |                                                                            |                                             |
+
+## Data dictionary {.smaller .scrollable}
+
+### Images
+
+One row = one image
+
+| Name          | Data type      | Definition                                            | Values             | Use |
+| ------------- | -------------- | ----------------------------------------------------- | -------------------------- | --- |
+| type          | String (index) | Image type: full-size vs cropped image                | "full", "crop"             |     |
+| id            | Int (index)    | Numeric ID marking the image within image types | 0-(number of rows by type) |     |
+| file_name     | String         | File name to read image | | After reading from this file, pixel data tensors will be features|
+| height        | Int            | Height of image                                       |                            |     |
+| width         | Int            | Width of image                                        |                            |     |
+| date_captured | Datetime       | Date of upload to Roboflow                            | Currently all May 2023     |     |
+
+
+## Street network
+
+Possible second phase: create a set of new up-to-date images from Google Street View. 
+
+* Requires sampling intersections from network of Baltimore streets to get coordinates at which to batch download Street View images
+
+## Example
+
+{{< embed ../src/eda.ipynb#streets >}}
+
+## Street network {.smaller}
+
+### Source
+
+Road network geography data comes from OpenStreetMap via the OSMnx package (@Boeing2017). 
+
+### Size
+
+* Full network, geopackage file: 36MB (not used for analysis)
+* Intersection coordinates, geopackage file: 3.8MB
+
+### Dimensions after cleaning
+
+24,274 rows x 4 columns
+
+
+## Data dictionary {.smaller .scrollable}
+
+One row = one intersection node
+
+| Name     | Data type | Definition                         | Values | Use                           |
+| -------- | --------- | ---------------------------------- | ------ | ----------------------------- |
+| id       | Int       | ID from the OpenStreetMap database |        |                               |
+| lon      | Float     | Longitude coordinate               | ~-76   | Use for Street View API calls |
+| lat      | Float     | Latitude coordinate                | ~39    | Use for Street View API calls |
+| geometry | Point     | GeoSeries of coordinates           |        | Use for spatial analysis      |
+
+
+
+
+
+# References {.smaller}
+

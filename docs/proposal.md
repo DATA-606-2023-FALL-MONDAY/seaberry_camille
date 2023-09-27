@@ -10,7 +10,7 @@ Wang
 
 Police surveillance cameras in Baltimore—many of which are situated at
 street intersections that make up a spatial network by which people move
-through the city—form one of many layers of state surveillance imporsed
+through the city—form one of many layers of state surveillance imposed
 upon residents. These cameras are often clearly visible at a distance,
 unlike less obvious layers operated by wannabe-state actor-vendors like
 Amazon (private Ring cameras subsidized by Amazon and distributed by

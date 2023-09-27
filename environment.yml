@@ -2,17 +2,17 @@ name: cap
 channels:
   - conda-forge
 dependencies:
-  - numpy
+  - pytorch-cuda=11.8
+  - torchvision
+  - lightning
   - pandas
   - pillow
   - python-dotenv
   - osmnx
   - networkx
-  - ca-certificates
-  - openssl
-  - libopencv
-  - opencv
-  - py-opencv
-  - certifi
   - nbclient
+  - ca-certificates
+  - certifi
+  - openssl
+  - opencv
 prefix: /home/camille/mambaforge/envs/cap
