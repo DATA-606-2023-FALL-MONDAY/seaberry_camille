@@ -2,9 +2,9 @@ name: cap
 channels:
   - conda-forge
 dependencies:
-  - pytorch-cuda=11.8
+  - pytorch-cuda=12.1
   - torchvision
-  - lightning
+  - lightning=2.1.0
   - pandas
   - pillow
   - python-dotenv
@@ -15,4 +15,12 @@ dependencies:
   - certifi
   - openssl
   - opencv
+  - ipywidgets
+  - seaborn
+  - torch_tb_profiler
+  - pytorch=2.1.0
+  - pytorch-lightning
+  - fire
+  - geopy
+  - sahi
 prefix: /home/camille/mambaforge/envs/cap
