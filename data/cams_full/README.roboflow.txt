@@ -1,8 +1,8 @@
 
-surveillance2 - v6 2023-05-20 1:57pm
+capstone - v1 full
 ==============================
 
-This dataset was exported via roboflow.com on May 20, 2023 at 5:59 PM GMT
+This dataset was exported via roboflow.com on October 22, 2023 at 6:52 AM GMT
 
 Roboflow is an end-to-end computer vision platform that helps you
 * collaborate with your team on computer vision projects
@@ -17,7 +17,7 @@ visit https://github.com/roboflow/notebooks
 
 To find over 100k other datasets and pre-trained models, visit https://universe.roboflow.com
 
-The dataset includes 2896 images.
+The dataset includes 2945 images.
 Surveillance-cameras are annotated in COCO format.
 
 The following pre-processing was applied to each image:

@@ -1,3 +1,8 @@
+'''
+This script comes from the Stanford project. It gives command line access to functions
+to download Street View images, based on the IDs in the metadata file. 
+I've minimally edited the download functions just to match the file structure.
+'''
 import fire
 
 # from plot import plot_all

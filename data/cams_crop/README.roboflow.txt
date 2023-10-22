@@ -1,8 +1,8 @@
 
-cams - v10 cropped
+cap-class - v1 2023-10-22 11:35am
 ==============================
 
-This dataset was exported via roboflow.com on May 7, 2023 at 11:48 PM GMT
+This dataset was exported via roboflow.com on October 22, 2023 at 3:37 PM GMT
 
 Roboflow is an end-to-end computer vision platform that helps you
 * collaborate with your team on computer vision projects
@@ -17,12 +17,14 @@ visit https://github.com/roboflow/notebooks
 
 To find over 100k other datasets and pre-trained models, visit https://universe.roboflow.com
 
-The dataset includes 2287 images.
-Surveillance-camera are annotated in COCO format.
+The dataset includes 1704 images.
+Surveillance-cameras are annotated in folder format.
 
 The following pre-processing was applied to each image:
 * Auto-orientation of pixel data (with EXIF-orientation stripping)
 
-No image augmentation techniques were applied.
+The following augmentation was applied to create 3 versions of each source image:
+* 50% probability of horizontal flip
+* Random rotation of between -15 and +15 degrees
 
 
