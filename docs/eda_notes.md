@@ -1,0 +1,3 @@
+* Street View images return lots of blanks--Stanford project uses panorama ID to make API calls, but Google recommends against this since IDs can change over time. Many have disappeared since then, so it will be important at some point to update the data based on location coordinates. I still want to rely on ID for training, though, because this will better ensure annotations are consistent, but should use up-to-date data for inference.
+* Images that have been removed have no information in them (gray box saying "Sorry, we have no imagery here" with Google's logo). They don't throw errors but have very small file sizes, which from what I can see is the best way to identify them for removal / skipping over.
+* For classification, do EDA on aspect ratios / area

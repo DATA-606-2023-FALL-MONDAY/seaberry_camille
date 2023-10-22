@@ -1,0 +1,2 @@
+- [ ] Converting street view metadata to COCO json format would be nice
+- [ ] Setup snakemake for reproducible workflow
