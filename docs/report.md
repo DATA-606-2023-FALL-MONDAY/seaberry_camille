@@ -46,7 +46,7 @@ cameras after detecting them. Because the Street View images can be
 downloaded based on their coordinates, once a camera is detected in an
 image, its location is known.
 
-For my capstone, I have **two major goals:**
+For this project, I have **two major goals:**
 
 1.  Improving upon the models I used, including introduction of more
     predefined models (adding YOLO, among others), finer tuning of
@@ -59,6 +59,9 @@ For my capstone, I have **two major goals:**
     demographic data to understand any patterns in this landscape and
     the potential burdens of surveillance on marginalized communities in
     Baltimore.
+
+The first of these is the focus of my capstone, while the second is a
+longer-term possibility.
 
 Therefore my **major research questions are:**
 
@@ -77,19 +80,21 @@ become the features. In the first task (detection), the target is the
 bounding box of the detected camera. In the second (classification), the
 target is the category of camera.
 
-If I decide to do spatial analysis once I have locations of cameras from
-a sample of intersections, the target would be presence / density of
-cameras, with geographic coordinates as the features (spatial
-regression, kriging, or other spatial modeling methods).
+Once I have locations of cameras from a sample of intersections, the
+target would be presence / density of cameras, with geographic
+coordinates as the features (spatial regression, kriging, or other
+spatial modeling methods).
 
 ### Images
 
 There are two sets of images, full-sized images and cropped images. The
 cropped images were made in Roboflow by cropping the full-sized images
-to their objects’ bounding boxes. Metadata are in COCO JSON format, with
-metadata about the date of upload to Roboflow, licenses, categories,
-images, and annotations. Of these, I am using the data on images and
-annotations. Alongside this metadata are the folders of images.
+to their objects’ bounding boxes. Full-sized images’ metadata are in
+COCO JSON format, with metadata about the date of upload to Roboflow,
+licenses, categories, images, and annotations. Of these, I am using the
+data on images and annotations. Alongside this metadata are the folders
+of images. Cropped images are arranged into folders by class, following
+the Pytorch `ImageFolder` model.
 
 #### Source
 
@@ -98,15 +103,23 @@ standardized on the Roboflow platform.
 
 #### Size (jpg files)
 
-- Full-size images: training, testing, and validation sets are 495MB,
-  28.6MB, and 53.2MB, respectively
-- Cropped images: training, testing, and validation sets are 1.1MB,
-  356kB, and 994kB, respectively
+- Full-size images: training, validation, and testing sets are 168MB,
+  18MB, and 8.5MB, respectively
+- Cropped images: training, validation, and testing sets are 6MB, 596kB,
+  and 296kB, respectively
 
 #### Dimensions after cleaning
 
-- Annotations: 5,655 rows x 6 columns (2 indices)
-- Image metadata: 3,557 rows x 6 columns (2 indices)
+Full-sized images and annotations:
+
+| Data type   | Split      | Rows  | Columns |
+|-------------|------------|-------|---------|
+| Images      | Training   | 2,580 | 7       |
+|             | Validation | 244   | 7       |
+|             | Testing    | 121   | 7       |
+| Annotations | Training   | 4,654 | 7       |
+|             | Validation | 474   | 7       |
+|             | Testing    | 236   | 7       |
 
 #### Time period
 
@@ -114,31 +127,37 @@ N/A
 
 #### Data dictionary
 
-##### Annotations
-
-One row = one marked camera
-
-| Name        | Data type      | Definition                                           | Values                                                                     | Use                                         |
-|-------------|----------------|------------------------------------------------------|----------------------------------------------------------------------------|---------------------------------------------|
-| type        | String (index) | Image type: full-size vs cropped image               | “full”, ‘crop’                                                             |                                             |
-| id          | Int (index)    | Numeric ID marking the annotation within image types | 0-(number of rows by type)                                                 |                                             |
-| image_id    | Int            | Numeric ID of corresponding image                    | 0-(number of images)                                                       |                                             |
-| category_id | Int            | Numeric category of camera type                      | 1: directed; 2: globe; 3: no classification (Objects365)                   | Target for classification of cropped images |
-| bbox        | List of 4 ints | Bounding box of camera within image                  | Coordinates of top-left corner w/r/t image, width & height of bounding box | Target for object detection                 |
-| area        | Float          | Area of the bounding box                             |                                                                            |                                             |
+Note that because annotations are in a standardized format (COCO JSON),
+some columns can be disregarded for analysis but I am describing them
+here for completeness.
 
 ##### Images
 
 One row = one image
 
-| Name          | Data type      | Definition                                      | Values                     | Use                                                               |
-|---------------|----------------|-------------------------------------------------|----------------------------|-------------------------------------------------------------------|
-| type          | String (index) | Image type: full-size vs cropped image          | “full”, “crop”             |                                                                   |
-| id            | Int (index)    | Numeric ID marking the image within image types | 0-(number of rows by type) | After reading from this file, pixel data tensors will be features |
-| file_name     | String         | File name to read image                         |                            |                                                                   |
-| height        | Int            | Height of image                                 |                            |                                                                   |
-| width         | Int            | Width of image                                  |                            |                                                                   |
-| date_captured | Datetime       | Date of upload to Roboflow                      | Currently all May 2023     |                                                                   |
+| Name          | Data type | Definition                | Values        | Use                   |
+|---------------|-----------|---------------------------|---------------|-----------------------|
+| id            | Int       | Unique numeric image ID   |               | Join with annotations |
+| license       | Int       | License type              | 1 (CC BY 4.0) | Disregard             |
+| file_name     | String    | Image file name           |               | Path to read images   |
+| height        | Int       | Full image height         | 640 (uniform) |                       |
+| width         | Int       | Full image width          | 640 (uniform) |                       |
+| data_captured | Datetime  | Date uploaded to Roboflow | 2023-10-22    |                       |
+| extra         | String    | Additional notes          | empty         | Disregard             |
+
+##### Annotations
+
+One row = one marked camera
+
+| Name         | Data type      | Definition                                                                               | Values                                                   | Use                                         |
+|--------------|----------------|------------------------------------------------------------------------------------------|----------------------------------------------------------|---------------------------------------------|
+| id           | Int            | Unique numeric annotation ID                                                             |                                                          |                                             |
+| image_id     | Int            | Unique numeric image ID of corresponding image                                           |                                                          | Join with images                            |
+| category_id  | Int            | Numeric category of camera type                                                          | 1: directed, 2: globe, 3: no classification (Objects365) | Target for classification of cropped images |
+| bbox         | List of 4 ints | Bounding box of annotation in COCO coordinate format (center-x, center-y, width, height) |                                                          | Target for object detection                 |
+| area         | Float          | Area of bounding box                                                                     |                                                          | May be used as a feature in classification  |
+| segmentation | List of ints   | Coordinates of segmentation points                                                       | Empty                                                    | Disregard                                   |
+| iscrows      | Int            | Flag for presence of “crowd” in image                                                    | Binary                                                   | Disregard                                   |
 
 ### Street network
 
@@ -182,7 +201,7 @@ One row = one intersection node
 
 ## EDA
 
-See notebook: [../src/eda.ipynb](../src/eda.ipynb)
+See notebook: [../src/eda_v2.ipynb](../src/eda_v2.ipynb)
 
 ## References
 
