@@ -22,11 +22,15 @@ if __name__ == '__main__':
     proj_detect = rf.workspace('seaberry').project('cap-detect')
     proj_class  = rf.workspace('seaberry').project('cap-class')
     
-    download_rf_imgs(proj_detect, v = 1, data_dir = 'data/cams_full')
+    # going to work with data in yolo format but already have code based on coco
+    download_rf_imgs(proj_detect, v = 2, data_dir = 'data/cams_full_coco', format = 'coco', 
+                     overwrite = True)
+    download_rf_imgs(proj_detect, v = 2, data_dir = 'data/cams_full', format = 'yolov5',
+                     overwrite = True)
     # temporary folder of cropped images
-    download_rf_imgs(proj_detect, v = 3, data_dir = 'data/cams_crop_tmp')
+    # download_rf_imgs(proj_detect, v = 3, data_dir = 'data/cams_crop_tmp')
     # cropped images for classification
     download_rf_imgs(proj_class, v = 1, data_dir = 'data/cams_crop', format = 'folder', 
-                     overwrite = False)
+                     overwrite = True)
     
-    shutil.rmtree('data/cams_crop_tmp')
+    # shutil.rmtree('data/cams_crop_tmp')

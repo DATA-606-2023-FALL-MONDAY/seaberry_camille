@@ -23,4 +23,6 @@ dependencies:
   - fire
   - geopy
   - sahi
+  - plotnine
+  - timm
 prefix: /home/camille/mambaforge/envs/cap
