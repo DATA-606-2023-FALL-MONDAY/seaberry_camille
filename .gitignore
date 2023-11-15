@@ -1,5 +1,9 @@
 data/**/*.tar.gz
 data/obj365/*-ann.json
+data/**/images
+data/**/labels
+runs/**/*.pt
+*.pt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
