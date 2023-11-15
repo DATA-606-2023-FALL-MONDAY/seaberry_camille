@@ -4,7 +4,6 @@ channels:
 dependencies:
   - pytorch-cuda=12.1
   - torchvision
-  - lightning=2.1.0
   - pandas
   - pillow
   - python-dotenv
@@ -19,10 +18,10 @@ dependencies:
   - seaborn
   - torch_tb_profiler
   - pytorch=2.1.0
-  - pytorch-lightning
   - fire
   - geopy
   - sahi
-  - plotnine
-  - timm
+  - ultralytics=8.0.186
+  - wandb
+  - albumentations
 prefix: /home/camille/mambaforge/envs/cap
