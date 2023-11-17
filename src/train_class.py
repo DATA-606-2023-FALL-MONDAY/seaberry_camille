@@ -11,7 +11,7 @@ import yaml
 from ultralytics import settings as ul_settings
 import argparse
 from pprint import pprint
-
+import shutil
 
 def setup(project_dir: Path, data_name: str = 'data') -> roboflow.core.project.Project:
     """Setup working directory, environment variables, ultralytics dataset directory, roboflow project, and wandb logging.
@@ -34,13 +34,13 @@ def setup(project_dir: Path, data_name: str = 'data') -> roboflow.core.project.P
     pprint(ul_settings)
     
     rf = Roboflow(api_key = os.getenv('ROBOFLOW_KEY'))
-    proj = rf.workspace('seaberry').project('cap-detect')
+    proj = rf.workspace('seaberry').project('cap-class')
     return proj
 
 def download_rf_imgs(proj: roboflow.core.project.Project, 
                      v: int, 
                      data_dir: str | Path, 
-                     format: str = 'yolov8', 
+                     format: str = 'folder', 
                      overwrite: bool = False) -> roboflow.core.dataset.Dataset:
     """Download images from a roboflow project, given its version number.
 
@@ -54,37 +54,34 @@ def download_rf_imgs(proj: roboflow.core.project.Project,
     Returns:
         Dataset: A roboflow dataset object
     """    
-    dataset = proj.version(v).download(model_format = format, location = data_dir, overwrite = overwrite)
+    dataset = proj.version(v).download(model_format = format, location = str(data_dir), overwrite = overwrite)
     return dataset
 
-def fix_data_yaml(dir: str) -> None:
-    """Paths to image directories have been inconsistent. This overwrites the datasets' yaml files 
-    to give them consistent paths such as train/images, rather than longer relative ones.
+def fix_data_dirs(dir: str) -> None:
+    """Paths to image directories have been inconsistent. This changes the name of a "valid" folder to "val".
 
     Args:
         dir (str): Directory containing train, val, and test folders.
     """    
     dir = Path(dir)
-    with open(dir / 'data.yaml', 'r') as f:
-        data = yaml.safe_load(f)
-    for split in ['train', 'val', 'test']:
-        long_dir = Path(data[split])
-        data[split] = long_dir.parent.name + '/' + long_dir.name
-    with open(dir / 'data.yaml', 'w') as f:
-        yaml.dump(data, f)
+    # check whether valid folder exists
+    if (dir / 'valid').exists():
+        # rename it to val
+        shutil.move(dir / 'valid', dir / 'val')
+        shutil.rmtree(dir / 'valid')
         
 def prep_datasets(proj: roboflow.core.project.Project, 
-                  versions: list = [2, 3],
-                  dirs: list = ['cams_full', 'cams_tile'],
-                  ids: list = ['full', 'tile'],
+                  versions: list = [2],
+                  dirs: list = ['cams_crop'],
+                  ids: list = ['crop'],
                   overwrite: bool = False) -> dict:
     """Download roboflow datasets, both full and tiled versions, fix their yaml, and return them.
 
     Args:
         proj (Project): A roboflow project object
-        versions (list, optional): Version numbers to download. Defaults to [2, 3].
-        dirs (list, optional): Directories to download to. Defaults to ['data/cams_full', 'data/cams_tile'].
-        ids (list, optional): Dataset names to use as keys. Defaults to ['full', 'tile'].
+        versions (list, optional): Version numbers to download. Defaults to [2].
+        dirs (list, optional): Directories to download to. Defaults to ['cams_crop'].
+        ids (list, optional): Dataset names to use as keys. Defaults to ['crop'].
         overwrite (bool, optional): Whether to overwrite folders. Defaults to False.
 
     Returns:
@@ -99,7 +96,7 @@ def prep_datasets(proj: roboflow.core.project.Project,
                                    v=v,
                                    data_dir=data_dir,
                                    overwrite=overwrite)
-        fix_data_yaml(dataset.location)
+        # fix_data_yaml(dataset.location)
         datasets[id] = dataset
     
     return datasets
@@ -109,7 +106,7 @@ def model_with_wb(
     model: YOLO | RTDETR,
     dataset: roboflow.core.dataset.Dataset,
     project: str = 'capstone',
-    imgsz: int = 640,
+    imgsz: int = 32,
     patience: int = 10,
     epochs: int = 5,
     batch: int = 16,
@@ -136,20 +133,19 @@ def model_with_wb(
         exist_ok (bool, optional): Whether to overwrite a previous run of the same name. Defaults to True.
         **kwargs: Additional named args to pass to YOLO trainer.
     """    
-    data_path = f'{dataset.location}/data.yaml'
+    data_path = f'{dataset.location}' # no data.yaml--that's just for detection
     print(f'\n TRAINING MODEL {id} ::::::::')
-    with wandb.init(project = project, name = id) as run:
-        model.train(data = data_path,
-                    imgsz = imgsz,
-                    patience = patience,
-                    epochs = epochs,
-                    batch = batch,
-                    freeze = freeze,
-                    save = save,
-                    exist_ok = exist_ok,
-                    single_cls = True,
-                    name = f'{id}_train',
-                    **kwargs)
+    # with wandb.init(project = project, name = id) as run:
+    model.train(data = data_path,
+                imgsz = imgsz,
+                patience = patience,
+                epochs = epochs,
+                batch = batch,
+                freeze = freeze,
+                save = save,
+                exist_ok = exist_ok,
+                name = f'{id}_train',
+                **kwargs)
 
 if __name__ == '__main__':
     prsr = argparse.ArgumentParser(prog = 'train_yolo.py', description = 'Train YOLO models on roboflow datasets.')
@@ -169,13 +165,14 @@ if __name__ == '__main__':
     datasets = prep_datasets(proj, overwrite = args.overwrite)
     
     # define params for runs
+    wts = { 'yolo': 'yolov8m-cls.pt' }
     base_params = { 'epochs': args.epochs, 'batch': args.batch }
     params = {}
-    params['yolo_full'] = { 'dataset': datasets['full'], 'model': YOLO('yolov8s.pt') }
+    params['yolo_class'] = { 'dataset': datasets['crop'], 'model': YOLO(wts['yolo'], task = 'classify') }
     params['detr_full'] = { 'dataset': datasets['full'], 'model': RTDETR('rtdetr-l.pt') }
     
     if args.use_freeze:
-        params['yolo_full_frz'] = { 'dataset': datasets['full'], 'model': YOLO('yolov8s.pt'), 'freeze': args.freeze }
+        params['yolo_class_frz'] = { 'dataset': datasets['crop'], 'model': YOLO(wts['yolo'], task = 'classify'), 'freeze': args.freeze }
         params['detr_full_frz'] = { 'dataset': datasets['full'], 'model': RTDETR('rtdetr-l.pt'), 'freeze': args.freeze }
     
     for id, ps in params.items():
