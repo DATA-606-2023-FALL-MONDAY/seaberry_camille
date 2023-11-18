@@ -54,7 +54,7 @@ def download_rf_imgs(proj: roboflow.core.project.Project,
     Returns:
         Dataset: A roboflow dataset object
     """    
-    dataset = proj.version(v).download(model_format = format, location = data_dir, overwrite = overwrite)
+    dataset = proj.version(v).download(model_format = format, location = str(data_dir), overwrite = overwrite)
     return dataset
 
 def fix_data_yaml(dir: str) -> None:
@@ -148,6 +148,10 @@ def model_with_wb(
                     save = save,
                     exist_ok = exist_ok,
                     single_cls = True,
+                    lr0 = 1e-3,
+                    # optimizer = 'AdamW',
+                    degrees = 15,
+                    cos_lr = True,
                     name = f'{id}_train',
                     **kwargs)
 
@@ -160,6 +164,7 @@ if __name__ == '__main__':
     prsr.add_argument('-o', '--overwrite', action = 'store_true', help = 'Overwrite existing datasets')
     prsr.add_argument('-z', '--use_freeze', action = 'store_true', help = 'Include runs with frozen layers')
     prsr.add_argument('-f', '--freeze', type = int, default = 20, help = 'Number of layers to freeze')
+    prsr.add_argument('-t', '--use_tile', action = 'store_true', help = 'Train on tiled images')
     args = prsr.parse_args()
     pprint(args)
     
@@ -169,15 +174,25 @@ if __name__ == '__main__':
     datasets = prep_datasets(proj, overwrite = args.overwrite)
     
     # define params for runs
+    yolo_wts = 'yolov8m.pt'
+    detr_wts = 'rtdetr-l.pt'
     base_params = { 'epochs': args.epochs, 'batch': args.batch }
     params = {}
-    params['yolo_full'] = { 'dataset': datasets['full'], 'model': YOLO('yolov8s.pt') }
-    params['detr_full'] = { 'dataset': datasets['full'], 'model': RTDETR('rtdetr-l.pt') }
+    params['yolo_full'] = { 'dataset': datasets['full'], 'model': YOLO(yolo_wts) }
+    params['detr_full'] = { 'dataset': datasets['full'], 'model': RTDETR(detr_wts) }
+    
+    if args.use_tile:
+        params['yolo_tile'] = { 'dataset': datasets['tile'], 'model': YOLO(yolo_wts) }
+        params['detr_tile'] = { 'dataset': datasets['tile'], 'model': RTDETR(detr_wts) }
     
     if args.use_freeze:
-        params['yolo_full_frz'] = { 'dataset': datasets['full'], 'model': YOLO('yolov8s.pt'), 'freeze': args.freeze }
-        params['detr_full_frz'] = { 'dataset': datasets['full'], 'model': RTDETR('rtdetr-l.pt'), 'freeze': args.freeze }
+        params['yolo_full_frz'] = { 'dataset': datasets['full'], 'model': YOLO(yolo_wts), 'freeze': args.freeze }
+        params['detr_full_frz'] = { 'dataset': datasets['full'], 'model': RTDETR(detr_wts), 'freeze': args.freeze }
     
+    if args.use_tile and args.use_freeze:
+        params['yolo_tile_frz'] = { 'dataset': datasets['tile'], 'model': YOLO(yolo_wts), 'freeze': args.freeze }
+        params['detr_tile_frz'] = { 'dataset': datasets['tile'], 'model': RTDETR(detr_wts), 'freeze': args.freeze }
+        
     for id, ps in params.items():
         run_params = { **base_params, **ps }
         model_with_wb(id, **run_params)
