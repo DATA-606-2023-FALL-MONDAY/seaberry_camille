@@ -34,7 +34,8 @@ def setup(project_dir: Path, data_name: str = 'data') -> roboflow.core.project.P
     pprint(ul_settings)
     
     rf = Roboflow(api_key = os.getenv('ROBOFLOW_KEY'))
-    proj = rf.workspace('seaberry').project('cap-detect')
+    # update project name
+    proj = rf.workspace('seaberry').project('comb-detect')
     return proj
 
 def download_rf_imgs(proj: roboflow.core.project.Project, 
@@ -138,8 +139,8 @@ def model_with_wb(
     """    
     data_path = f'{dataset.location}/data.yaml'
     print(f'\n TRAINING MODEL {id} ::::::::')
-    with wandb.init(project = project, name = id) as run:
-        model.train(data = data_path,
+    # with wandb.init(project = project, name = id) as run:
+    model.train(data = data_path,
                     imgsz = imgsz,
                     patience = patience,
                     epochs = epochs,
@@ -152,6 +153,7 @@ def model_with_wb(
                     # optimizer = 'AdamW',
                     degrees = 15,
                     cos_lr = True,
+                    amp = False,
                     name = f'{id}_train',
                     **kwargs)
 
@@ -171,19 +173,23 @@ if __name__ == '__main__':
     # set project directory and setup project
     PROJECT_DIR = Path(args.project_dir)
     proj = setup(PROJECT_DIR, args.data_name)
-    datasets = prep_datasets(proj, overwrite = args.overwrite)
+    datasets = prep_datasets(proj, 
+                             versions = [1],
+                             dirs = ['cams_full'],
+                             ids = ['full'],
+                             overwrite = args.overwrite)
     
     # define params for runs
-    yolo_wts = 'yolov8m.pt'
+    yolo_wts = 'yolov8s.pt'
     detr_wts = 'rtdetr-l.pt'
     base_params = { 'epochs': args.epochs, 'batch': args.batch }
     params = {}
     params['yolo_full'] = { 'dataset': datasets['full'], 'model': YOLO(yolo_wts) }
-    params['detr_full'] = { 'dataset': datasets['full'], 'model': RTDETR(detr_wts) }
+    # params['detr_full'] = { 'dataset': datasets['full'], 'model': RTDETR(detr_wts) }
     
     if args.use_tile:
         params['yolo_tile'] = { 'dataset': datasets['tile'], 'model': YOLO(yolo_wts) }
-        params['detr_tile'] = { 'dataset': datasets['tile'], 'model': RTDETR(detr_wts) }
+        # params['detr_tile'] = { 'dataset': datasets['tile'], 'model': RTDETR(detr_wts) }
     
     if args.use_freeze:
         params['yolo_full_frz'] = { 'dataset': datasets['full'], 'model': YOLO(yolo_wts), 'freeze': args.freeze }

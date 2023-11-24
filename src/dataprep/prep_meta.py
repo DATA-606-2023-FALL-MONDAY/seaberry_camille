@@ -18,7 +18,65 @@ import json
 import os
 from pathlib import Path
 import multiprocessing as mp
+import zipfile
+import argparse
+from pprint import pprint
+import supervision as sv
 
+class VistaCleanup:
+    def __init__(self, base_dir: str, ann_orig: str, archive: str):
+        self.base_dir = Path(base_dir)
+        self.archive = self.base_dir / archive
+        self.ann_orig = self.base_dir / ann_orig
+        self.ann_out = self.base_dir / 'vista_ann.csv'
+        self.img_paths = []
+    
+    def get_imgs_from_ann(self):
+        coco = PyCOCO(self.ann_orig)
+        cat_ids = coco.getCatIds(catNms = ['CCTV_Camera'])
+        img_ids = coco.getImgIds(catIds = cat_ids)
+        imgs = coco.loadImgs(img_ids)
+        return imgs # returns dicts incl id & file name
+    
+    def extract_imgs(self, img_paths):
+        out_dir = self.base_dir / 'images'
+        zip_file = zipfile.ZipFile(self.archive, 'r')
+        # get names of images in zip file
+        imgs = [i for i in zip_file.namelist() if i in img_paths]
+        for img in imgs:
+            zip_file.extract(img, out_dir)
+        return imgs
+    
+    def read_json(self, path):
+        with open(path, 'r') as f:
+            return json.load(f)
+
+    def write_coco(self, img_paths):
+        # for each image, get matching json path
+        # read json files, get bbox & label from polygons for which category matches
+        # write yolo-style text?
+        df = pd.DataFrame({ 'img_path': img_paths })
+        df['image'] = df['img_path'].apply(lambda x: x.stem)
+        df['json_path'] = df['image'].apply(lambda x: self.base_dir / 'json' / f'{x}.json')
+        df['ann'] = df['json_path'].apply(self.read_json)
+        df['objects'] = df['ann'].apply(lambda x: x['objects'])
+        df['bbox'] = df['objects'].apply(lambda x: [sv.polygon_to_xyxy(p['polygon']).astype(int) for p in x if 'cctv' in p['label']])
+        df_long = df.explode('bbox')
+        bbox = df_long['bbox'].apply(pd.Series)
+        bbox.columns = ['xmin', 'ymin', 'xmax', 'ymax']
+        bbox['image'] = df_long['img_path'].apply(lambda x: Path(x).name)
+        bbox['label'] = 'cctv'
+        bbox = bbox.loc[:, ['image', 'xmin', 'ymin', 'xmax', 'ymax', 'label']]
+        bbox.to_csv(self.ann_out, index = False)
+        self.total = len(bbox)
+        return bbox
+
+    def prep_coco(self):
+        imgs = self.get_imgs_from_ann()
+        img_paths = [self.base_dir / 'images' / i['file_name'] for i in imgs]
+        self.extract_imgs(img_paths)
+        self.write_coco(img_paths)
+        self.img_paths = img_paths
 
 class Obj365Cleanup:
     '''
@@ -144,11 +202,27 @@ class StreetCleanup():
         self.total = len(ann_out)
 
 if __name__ == '__main__':
-    obj365 = Obj365Cleanup(split='val', base_dir='data/obj365')
-    obj365.prep_coco()
+    prsr = argparse.ArgumentParser(prog = 'prep_meta.py', description = 'Prep metadata for datasets')
+    prsr.add_argument('-o', '--objects365', action = 'store_true', help = 'Clean Objects365')
+    prsr.add_argument('-s', '--streetview', action = 'store_true', help = 'Clean Street View')
+    prsr.add_argument('-v', '--vista', action = 'store_true', help = 'Clean Mapillary Vistas')
+    args = prsr.parse_args()
+    pprint(args)
     
-    sv = StreetCleanup(ann_orig = 'data/sv_meta.csv', base_dir = 'data/streetview')
-    sv.clean_meta()
+    if args.objects365:
+        obj365 = Obj365Cleanup(split='val', base_dir='data/obj365')
+        obj365.prep_coco()
+        print(f'total obj365 boxes: {obj365.total}')
     
-    print(f'total obj365 images: {obj365.total}')
-    print(f'total streetview images: {sv.total}')
+    if args.streetview:
+        sv = StreetCleanup(ann_orig = 'data/sv_meta.csv', base_dir = 'data/streetview')
+        sv.clean_meta()
+        print(f'total streetview images: {sv.total}')
+    
+    # vista doesn't actually work since it's segmentation, not bbox
+    if args.vista:
+        vista = VistaCleanup(base_dir = 'data/vista', 
+                            ann_orig = 'instances_shape_training2020.json',
+                            archive = 'mapvistas.zip')
+        vista.prep_coco()
+        print(f'total vista boxes: {vista.total}')

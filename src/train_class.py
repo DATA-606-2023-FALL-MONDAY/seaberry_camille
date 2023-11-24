@@ -107,7 +107,7 @@ def model_with_wb(
     dataset: roboflow.core.dataset.Dataset,
     project: str = 'capstone',
     imgsz: int = 32,
-    patience: int = 10,
+    patience: int = 0,
     epochs: int = 5,
     batch: int = 16,
     freeze: int = 0,
@@ -135,17 +135,20 @@ def model_with_wb(
     """    
     data_path = f'{dataset.location}' # no data.yaml--that's just for detection
     print(f'\n TRAINING MODEL {id} ::::::::')
-    # with wandb.init(project = project, name = id) as run:
-    model.train(data = data_path,
-                imgsz = imgsz,
-                patience = patience,
-                epochs = epochs,
-                batch = batch,
-                freeze = freeze,
-                save = save,
-                exist_ok = exist_ok,
-                name = f'{id}_train',
-                **kwargs)
+    with wandb.init(project = project, name = id) as run:
+        model.train(data = data_path,
+                    imgsz = imgsz,
+                    patience = patience,
+                    epochs = epochs,
+                    batch = batch,
+                    freeze = freeze,
+                    save = save,
+                    exist_ok = exist_ok,
+                    close_mosaic = 0,
+                    cos_lr = True,
+                    amp = False,
+                    name = f'{id}_train',
+                    **kwargs)
 
 if __name__ == '__main__':
     prsr = argparse.ArgumentParser(prog = 'train_yolo.py', description = 'Train YOLO models on roboflow datasets.')
@@ -155,7 +158,7 @@ if __name__ == '__main__':
     prsr.add_argument('-b', '--batch', type = int, default = 16, help = 'Batch size')
     prsr.add_argument('-o', '--overwrite', action = 'store_true', help = 'Overwrite existing datasets')
     prsr.add_argument('-z', '--use_freeze', action = 'store_true', help = 'Include runs with frozen layers')
-    prsr.add_argument('-f', '--freeze', type = int, default = 20, help = 'Number of layers to freeze')
+    prsr.add_argument('-f', '--freeze', type = int, default = 7, help = 'Number of layers to freeze')
     args = prsr.parse_args()
     pprint(args)
     
@@ -169,11 +172,11 @@ if __name__ == '__main__':
     base_params = { 'epochs': args.epochs, 'batch': args.batch }
     params = {}
     params['yolo_class'] = { 'dataset': datasets['crop'], 'model': YOLO(wts['yolo'], task = 'classify') }
-    params['detr_full'] = { 'dataset': datasets['full'], 'model': RTDETR('rtdetr-l.pt') }
+    # params['detr_full'] = { 'dataset': datasets['full'], 'model': RTDETR('rtdetr-l.pt') }
     
     if args.use_freeze:
         params['yolo_class_frz'] = { 'dataset': datasets['crop'], 'model': YOLO(wts['yolo'], task = 'classify'), 'freeze': args.freeze }
-        params['detr_full_frz'] = { 'dataset': datasets['full'], 'model': RTDETR('rtdetr-l.pt'), 'freeze': args.freeze }
+        # params['detr_full_frz'] = { 'dataset': datasets['full'], 'model': RTDETR('rtdetr-l.pt'), 'freeze': args.freeze }
     
     for id, ps in params.items():
         run_params = { **base_params, **ps }
