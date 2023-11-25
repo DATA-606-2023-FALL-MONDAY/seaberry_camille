@@ -7,7 +7,6 @@ from ultralytics import YOLO, RTDETR
 import wandb
 from pathlib import Path
 from dotenv import load_dotenv
-import yaml
 from ultralytics import settings as ul_settings
 import argparse
 from pprint import pprint
@@ -68,12 +67,12 @@ def fix_data_dirs(dir: str) -> None:
     if (dir / 'valid').exists():
         # rename it to val
         shutil.move(dir / 'valid', dir / 'val')
-        shutil.rmtree(dir / 'valid')
+        # shutil.rmtree(dir / 'valid')
         
 def prep_datasets(proj: roboflow.core.project.Project, 
-                  versions: list = [2],
-                  dirs: list = ['cams_crop'],
-                  ids: list = ['crop'],
+                  versions: list,
+                  dirs: list,
+                  ids: list,
                   overwrite: bool = False) -> dict:
     """Download roboflow datasets, both full and tiled versions, fix their yaml, and return them.
 
@@ -96,7 +95,7 @@ def prep_datasets(proj: roboflow.core.project.Project,
                                    v=v,
                                    data_dir=data_dir,
                                    overwrite=overwrite)
-        # fix_data_yaml(dataset.location)
+        fix_data_dirs(dataset.location)
         datasets[id] = dataset
     
     return datasets
@@ -165,18 +164,19 @@ if __name__ == '__main__':
     # set project directory and setup project
     PROJECT_DIR = Path(args.project_dir)
     proj = setup(PROJECT_DIR, args.data_name)
-    datasets = prep_datasets(proj, overwrite = args.overwrite)
+    datasets = prep_datasets(proj, 
+                             versions = [2], dirs = ['cams_crop'], ids = ['crop'],
+                             overwrite = args.overwrite)
     
     # define params for runs
+    # only has yolo models for classification
     wts = { 'yolo': 'yolov8m-cls.pt' }
     base_params = { 'epochs': args.epochs, 'batch': args.batch }
     params = {}
     params['yolo_class'] = { 'dataset': datasets['crop'], 'model': YOLO(wts['yolo'], task = 'classify') }
-    # params['detr_full'] = { 'dataset': datasets['full'], 'model': RTDETR('rtdetr-l.pt') }
     
     if args.use_freeze:
         params['yolo_class_frz'] = { 'dataset': datasets['crop'], 'model': YOLO(wts['yolo'], task = 'classify'), 'freeze': args.freeze }
-        # params['detr_full_frz'] = { 'dataset': datasets['full'], 'model': RTDETR('rtdetr-l.pt'), 'freeze': args.freeze }
     
     for id, ps in params.items():
         run_params = { **base_params, **ps }

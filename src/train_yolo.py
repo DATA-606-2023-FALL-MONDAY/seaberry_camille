@@ -11,6 +11,7 @@ import yaml
 from ultralytics import settings as ul_settings
 import argparse
 from pprint import pprint
+import torch
 
 
 def setup(project_dir: Path, data_name: str = 'data') -> roboflow.core.project.Project:
@@ -75,15 +76,15 @@ def fix_data_yaml(dir: str) -> None:
         yaml.dump(data, f)
         
 def prep_datasets(proj: roboflow.core.project.Project, 
-                  versions: list = [2, 3],
-                  dirs: list = ['cams_full', 'cams_tile'],
-                  ids: list = ['full', 'tile'],
+                  versions: list,
+                  dirs: list,
+                  ids: list,
                   overwrite: bool = False) -> dict:
     """Download roboflow datasets, both full and tiled versions, fix their yaml, and return them.
 
     Args:
         proj (Project): A roboflow project object
-        versions (list, optional): Version numbers to download. Defaults to [2, 3].
+        versions (list, optional): Version numbers to download. Defaults to [1, 3].
         dirs (list, optional): Directories to download to. Defaults to ['data/cams_full', 'data/cams_tile'].
         ids (list, optional): Dataset names to use as keys. Defaults to ['full', 'tile'].
         overwrite (bool, optional): Whether to overwrite folders. Defaults to False.
@@ -107,7 +108,8 @@ def prep_datasets(proj: roboflow.core.project.Project,
 
 def model_with_wb(
     id: str,
-    model: YOLO | RTDETR,
+    model: str,
+    weights: str,
     dataset: roboflow.core.dataset.Dataset,
     project: str = 'capstone',
     imgsz: int = 640,
@@ -119,11 +121,12 @@ def model_with_wb(
     exist_ok: bool = True,
     **kwargs
 ) -> None:
-    """Train a YOLO model and log to wandb.
+    """Train a YOLO model and log to wandb. In order to not crash, this clears the cuda cache after each run.
 
     Args:
         id (str): ID for this run, used for naming run folders.
-        model (YOLO | RTDETR): Model to train
+        model (str): Type of model to train, either 'yolo' or 'detr'.
+        weights (str): Name of weights file to use.
         dataset (roboflow.Dataset): Dataset to use for training
         project (str, optional): Name of project on wandb. Defaults to 'capstone'.
         
@@ -139,23 +142,31 @@ def model_with_wb(
     """    
     data_path = f'{dataset.location}/data.yaml'
     print(f'\n TRAINING MODEL {id} ::::::::')
-    # with wandb.init(project = project, name = id) as run:
-    model.train(data = data_path,
-                    imgsz = imgsz,
-                    patience = patience,
-                    epochs = epochs,
-                    batch = batch,
-                    freeze = freeze,
-                    save = save,
-                    exist_ok = exist_ok,
-                    single_cls = True,
-                    lr0 = 1e-3,
-                    # optimizer = 'AdamW',
-                    degrees = 15,
-                    cos_lr = True,
-                    amp = False,
-                    name = f'{id}_train',
-                    **kwargs)
+    with wandb.init(project = project, name = id) as run:
+        if model == 'yolo':
+            model = YOLO(weights)
+        elif model == 'detr':
+            model = RTDETR(weights)
+        else: 
+            raise ValueError(f'Invalid model {model}')
+        model.train(data = data_path,
+                        imgsz = imgsz,
+                        patience = patience,
+                        epochs = epochs,
+                        batch = batch,
+                        freeze = freeze,
+                        save = save,
+                        exist_ok = exist_ok,
+                        single_cls = True,
+                        lr0 = 1e-3,
+                        # optimizer = 'AdamW',
+                        degrees = 15,
+                        cos_lr = True,
+                        amp = False,
+                        name = f'{id}_train',
+                        **kwargs)
+        # clear torch cache
+        # torch.cuda.empty_cache()
 
 if __name__ == '__main__':
     prsr = argparse.ArgumentParser(prog = 'train_yolo.py', description = 'Train YOLO models on roboflow datasets.')
@@ -164,43 +175,52 @@ if __name__ == '__main__':
     prsr.add_argument('-e', '--epochs', type = int, default = 40, help = 'Number of epochs')
     prsr.add_argument('-b', '--batch', type = int, default = 16, help = 'Batch size')
     prsr.add_argument('-o', '--overwrite', action = 'store_true', help = 'Overwrite existing datasets')
+    prsr.add_argument('-a', '--use_plain', action = 'store_true', help = 'Include basic runs (no freezing or tiling)')
     prsr.add_argument('-z', '--use_freeze', action = 'store_true', help = 'Include runs with frozen layers')
     prsr.add_argument('-f', '--freeze', type = int, default = 20, help = 'Number of layers to freeze')
     prsr.add_argument('-t', '--use_tile', action = 'store_true', help = 'Train on tiled images')
     args = prsr.parse_args()
     pprint(args)
     
+    # needs at least one type of run
+    if not args.use_plain and not args.use_freeze and not args.use_tile:
+        raise ValueError('Must include at least one type of run')
     # set project directory and setup project
     PROJECT_DIR = Path(args.project_dir)
     proj = setup(PROJECT_DIR, args.data_name)
     datasets = prep_datasets(proj, 
-                             versions = [1],
-                             dirs = ['cams_full'],
-                             ids = ['full'],
+                             versions = [8, 9],
+                             dirs = ['cams_full', 'cams_tile'],
+                             ids = ['full', 'tile'],
                              overwrite = args.overwrite)
     
     # define params for runs
-    yolo_wts = 'yolov8s.pt'
-    detr_wts = 'rtdetr-l.pt'
+    weights = { 'yolo': 'yolov8s.pt', 'detr': 'rtdetr-l.pt'}
     base_params = { 'epochs': args.epochs, 'batch': args.batch }
     params = {}
-    params['yolo_full'] = { 'dataset': datasets['full'], 'model': YOLO(yolo_wts) }
-    # params['detr_full'] = { 'dataset': datasets['full'], 'model': RTDETR(detr_wts) }
+    
+    if args.use_plain:
+        params['yolo_full'] = { 'dataset': datasets['full'], 'model': 'yolo', 'weights': weights['yolo'] }
+        params['detr_full'] = { 'dataset': datasets['full'], 'model': 'detr', 'weights': weights['detr'] }
     
     if args.use_tile:
-        params['yolo_tile'] = { 'dataset': datasets['tile'], 'model': YOLO(yolo_wts) }
-        # params['detr_tile'] = { 'dataset': datasets['tile'], 'model': RTDETR(detr_wts) }
+        params['yolo_tile'] = { 'dataset': datasets['tile'], 'model': 'yolo', 'weights': weights['yolo'] }
+        params['detr_tile'] = { 'dataset': datasets['tile'], 'model': 'detr', 'weights': weights['detr'] }
     
     if args.use_freeze:
-        params['yolo_full_frz'] = { 'dataset': datasets['full'], 'model': YOLO(yolo_wts), 'freeze': args.freeze }
-        params['detr_full_frz'] = { 'dataset': datasets['full'], 'model': RTDETR(detr_wts), 'freeze': args.freeze }
+        params['yolo_full_frz'] = { 'dataset': datasets['full'], 'model': 'yolo', 'weights': weights['yolo'], 'freeze': args.freeze }
+        params['detr_full_frz'] = { 'dataset': datasets['full'], 'model': 'detr', 'weights': weights['detr'], 'freeze': args.freeze }
     
     if args.use_tile and args.use_freeze:
-        params['yolo_tile_frz'] = { 'dataset': datasets['tile'], 'model': YOLO(yolo_wts), 'freeze': args.freeze }
-        params['detr_tile_frz'] = { 'dataset': datasets['tile'], 'model': RTDETR(detr_wts), 'freeze': args.freeze }
+        params['yolo_tile_frz'] = { 'dataset': datasets['tile'], 'model': 'yolo', 'weights': weights['yolo'], 'freeze': args.freeze }
+        params['detr_tile_frz'] = { 'dataset': datasets['tile'], 'model': 'detr', 'weights': weights['detr'], 'freeze': args.freeze }
         
     for id, ps in params.items():
         run_params = { **base_params, **ps }
+        # check whether id contains the string 'detr'--cut batch since it needs more ram
+        if 'detr' in id:
+            run_params['batch'] = int(run_params['batch'] / 2)
+        pprint(run_params)
         model_with_wb(id, **run_params)
     
     wandb.finish()
