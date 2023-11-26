@@ -1,10 +1,9 @@
 # TUNE YOLO DETECT MODEL
 import os
 from pathlib import Path
-from ultralytics import YOLO
+from ultralytics import YOLO, RTDETR
 import wandb
 from dotenv import load_dotenv
-import yaml
 import argparse
 from pprint import pprint
 import torch
@@ -26,6 +25,7 @@ def tune_with_wb(
     iterations: int = 10,
     save: bool = True,
     exist_ok: bool = True,
+    val: bool = False,
     **kwargs
 ) -> dict:
     model.tune(
@@ -39,56 +39,74 @@ def tune_with_wb(
         cos_lr = True,
         amp = False,
         plots = False,
+        val = val,
         name = id, 
-        tune_dir = tune_dir,
+        # tune_dir = tune_dir,
         **kwargs
     )
+    
+def get_model_type(run: str, model_type: str):
+    if model_type is not None:
+        model_type = model_type 
+    else:
+        model_type = run.split('_')[0]
+    if model_type == 'yolo':
+        model = YOLO
+    elif model_type == 'detr':
+        model = RTDETR
+    else:
+        raise ValueError(f'Invalid model type {model_type}')
+    return model
 
 if __name__ == '__main__':
     # take arg of which model to use
-    PROJECT_DIR = Path('/home/camille/code/capstone')
-    setup(PROJECT_DIR)
-    model_id = 'yolo_tile_train'
-    tune_id = model_id.replace('train', 'tune')
-    dataset = 'cams_full'
-    base_params = { 'optimizer': 'AdamW', 'degrees': 15 }
-    model = YOLO(PROJECT_DIR / 'runs/detect' / model_id / 'weights' / 'best.pt')
-    tune_with_wb(id = tune_id, 
-                 model = model, 
-                 data_yaml = PROJECT_DIR / 'data' / dataset / 'data.yaml', 
-                 tune_dir = PROJECT_DIR / 'runs' / tune_id,
-                 epochs = 2, 
-                 iterations = 5, 
-                 save = False,  
-                 batch = 8,
-                 **base_params)
+    prsr = argparse.ArgumentParser()
+    prsr.add_argument('run', type = str, help = 'Name of run to tune---must be in runs/detect')
+    prsr.add_argument('-m', '--model_type', type = str, help = 'Type of model used, either yolo or detr; if None, inferred from run name')
+    prsr.add_argument('-D', '--dataset', type = str, help = 'Name of dataset, which contains a data.yaml file')
+    prsr.add_argument('-p', '--project_dir', type = str, default = './', help = 'Project directory')
+    prsr.add_argument('-d', '--data_name', type = str, default = 'data', help = 'Name of data directory')
+    prsr.add_argument('-e', '--tune_epochs', type = int, default = 10, help = 'Number of epochs for tuning')
+    prsr.add_argument('-E', '--train_epochs', type = int, default = 40, help = 'Number of epochs for training')
+    prsr.add_argument('-b', '--batch', type = int, default = 16, help = 'Batch size')
+    prsr.add_argument('-i', '--iterations', type = int, default = 10, help = 'Number of iterations for tuning')
+    prsr.add_argument('-t', '--train', action = 'store_true', help = 'Whether to train after tuning')
+    args = prsr.parse_args()
     
-
-
-# from ultralytics import YOLO 
-# import yaml
-# from pathlib import Path
-# PROJECT_DIR = Path('/home/camille/code/capstone')
-# best_yolo = YOLO(PROJECT_DIR / 'runs/detect/tune/weights/best.pt')
-# with open(PROJECT_DIR / 'runs/detect/tune/best_hyperparameters.yaml') as f:
-#     best_params = yaml.load(f, Loader = yaml.FullLoader)
-# best_res = best_yolo.train(name = 'best_yolo_train',
-#                            data = PROJECT_DIR / 'data/cams_full/data.yaml',
-#                            amp = False,
-#                            batch = 8,
-#                            epochs = 10,
-#                            optimizer = 'AdamW',
-#                            **best_params)
-
-from pathlib import Path
-from ultralytics import YOLO
-PROJECT_DIR = Path('/home/camille/code/capstone')
-best_tile = YOLO(PROJECT_DIR / 'runs/detect/yolo_tile_train/weights/best.pt')
-best_tile.train(name = 'tile_to_full_train', 
-                data = '/home/camille/code/capstone/data/cams_full/data.yaml',
-                amp = False,  
-                freeze = 21,
-                batch = 8, 
-                epochs = 5,
-                optimizer = 'AdamW',
-                single_cls = True)
+    PROJECT_DIR = Path(args.project_dir)
+    
+    # get model type based on run name
+    model_id = args.run
+    weights = PROJECT_DIR / 'runs/detect' / model_id / 'weights' / 'best.pt'
+    model = get_model_type(model_id, args.model_type)(weights)
+    tune_id = model_id.replace('train', 'tune')
+    dataset = args.dataset
+    
+    setup(PROJECT_DIR)
+    
+    base_params = { 'optimizer': 'AdamW' }
+    tune_res = tune_with_wb(id = tune_id, 
+                 model = model, 
+                 data_yaml = PROJECT_DIR / args.data_name / dataset / 'data.yaml', 
+                 tune_dir = PROJECT_DIR / 'runs' / tune_id,
+                 epochs = args.tune_epochs, 
+                 iterations = args.iterations, 
+                 save = False,  
+                 batch = args.batch,
+                 val = False,
+                 **base_params)
+    print(tune_res)
+    
+    if args.train:
+        # get best params from tune
+        best_params = tune_res['best_params']
+        # train with best params
+        best_res = model.train(name = f'best_{model_id}',
+                               data = PROJECT_DIR / args.data_name / dataset / 'data.yaml',
+                               amp = False,
+                               batch = args.batch,
+                               epochs = args.train_epochs,
+                               optimizer = 'AdamW',
+                               **best_params)
+    
+        print(best_res)

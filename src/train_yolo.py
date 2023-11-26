@@ -175,7 +175,7 @@ if __name__ == '__main__':
     prsr.add_argument('-e', '--epochs', type = int, default = 40, help = 'Number of epochs')
     prsr.add_argument('-b', '--batch', type = int, default = 16, help = 'Batch size')
     prsr.add_argument('-o', '--overwrite', action = 'store_true', help = 'Overwrite existing datasets')
-    prsr.add_argument('-a', '--use_plain', action = 'store_true', help = 'Include basic runs (no freezing or tiling)')
+    prsr.add_argument('-a', '--use_plain', action = 'store_true', default = True, help = 'Include basic runs (no freezing or tiling)')
     prsr.add_argument('-z', '--use_freeze', action = 'store_true', help = 'Include runs with frozen layers')
     prsr.add_argument('-f', '--freeze', type = int, default = 20, help = 'Number of layers to freeze')
     prsr.add_argument('-t', '--use_tile', action = 'store_true', help = 'Train on tiled images')
