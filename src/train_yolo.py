@@ -14,7 +14,7 @@ from pprint import pprint
 import torch
 
 
-def setup(project_dir: Path, data_name: str = 'data') -> roboflow.core.project.Project:
+def setup(project_dir: Path, proj_name: str, data_name: str = 'data') -> roboflow.core.project.Project:
     """Setup working directory, environment variables, ultralytics dataset directory, roboflow project, and wandb logging.
 
     Args:
@@ -36,7 +36,7 @@ def setup(project_dir: Path, data_name: str = 'data') -> roboflow.core.project.P
     
     rf = Roboflow(api_key = os.getenv('ROBOFLOW_KEY'))
     # update project name
-    proj = rf.workspace('seaberry').project('comb-detect')
+    proj = rf.workspace('seaberry').project(proj_name)
     return proj
 
 def download_rf_imgs(proj: roboflow.core.project.Project, 
@@ -158,11 +158,11 @@ def model_with_wb(
                         save = save,
                         exist_ok = exist_ok,
                         single_cls = True,
-                        lr0 = 1e-3,
+                        # lr0 = 1e-3,
                         # optimizer = 'AdamW',
                         degrees = 15,
                         cos_lr = True,
-                        amp = False,
+                        amp = True,
                         name = f'{id}_train',
                         **kwargs)
         # clear torch cache
@@ -175,7 +175,7 @@ if __name__ == '__main__':
     prsr.add_argument('-e', '--epochs', type = int, default = 40, help = 'Number of epochs')
     prsr.add_argument('-b', '--batch', type = int, default = 16, help = 'Batch size')
     prsr.add_argument('-o', '--overwrite', action = 'store_true', help = 'Overwrite existing datasets')
-    prsr.add_argument('-a', '--use_plain', action = 'store_true', default = True, help = 'Include basic runs (no freezing or tiling)')
+    prsr.add_argument('-a', '--use_plain', action = 'store_true', help = 'Include basic runs (no freezing or tiling)')
     prsr.add_argument('-z', '--use_freeze', action = 'store_true', help = 'Include runs with frozen layers')
     prsr.add_argument('-f', '--freeze', type = int, default = 20, help = 'Number of layers to freeze')
     prsr.add_argument('-t', '--use_tile', action = 'store_true', help = 'Train on tiled images')
@@ -187,9 +187,11 @@ if __name__ == '__main__':
         raise ValueError('Must include at least one type of run')
     # set project directory and setup project
     PROJECT_DIR = Path(args.project_dir)
-    proj = setup(PROJECT_DIR, args.data_name)
+    proj_name = 'cap-detect'
+    proj = setup(PROJECT_DIR, proj_name, args.data_name)
     datasets = prep_datasets(proj, 
-                             versions = [8, 9],
+                            #  versions = [10, 9],
+                            versions = [2, 3],
                              dirs = ['cams_full', 'cams_tile'],
                              ids = ['full', 'tile'],
                              overwrite = args.overwrite)
