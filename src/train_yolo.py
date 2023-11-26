@@ -12,9 +12,10 @@ from ultralytics import settings as ul_settings
 import argparse
 from pprint import pprint
 import torch
+import shutil
 
 
-def setup(project_dir: Path, proj_name: str, data_name: str = 'data') -> roboflow.core.project.Project:
+def setup(project_dir: Path, proj_name: list, data_name: str = 'data') -> roboflow.core.project.Project:
     """Setup working directory, environment variables, ultralytics dataset directory, roboflow project, and wandb logging.
 
     Args:
@@ -36,8 +37,9 @@ def setup(project_dir: Path, proj_name: str, data_name: str = 'data') -> roboflo
     
     rf = Roboflow(api_key = os.getenv('ROBOFLOW_KEY'))
     # update project name
-    proj = rf.workspace('seaberry').project(proj_name)
-    return proj
+    projs = { p: rf.workspace('seaberry').project(p) for p in proj_name }
+    # proj = rf.workspace('seaberry').project(proj_name)
+    return projs
 
 def download_rf_imgs(proj: roboflow.core.project.Project, 
                      v: int, 
@@ -59,6 +61,32 @@ def download_rf_imgs(proj: roboflow.core.project.Project,
     dataset = proj.version(v).download(model_format = format, location = str(data_dir), overwrite = overwrite)
     return dataset
 
+def combine_imgs(dirs: list, out_dir: str, splits: list = ['train', 'valid', 'test']) -> None:
+    # combine splits across directories
+    for split in splits:
+        # make split directories for combined dataset
+        split_new = Path(out_dir) / split # e.g. comb_detect/train
+        split_new.mkdir(parents = True, exist_ok = True)
+        # make img, label directories for each split in combined dataset
+        imgs_new = split_new / 'images'
+        lbls_new = split_new / 'labels'
+        imgs_new.mkdir(parents = True, exist_ok = True) # e.g. comb_detect/train/images
+        lbls_new.mkdir(parents = True, exist_ok = True)
+        
+        for dataset in dirs:
+            # copy contents of img, label directories from each dataset to combined dataset by split
+            split_old = Path(dataset) / split # e.g. sv_full/train
+            imgs_old = (split_old / 'images').glob('*')
+            lbls_old = (split_old / 'labels').glob('*')
+            print(imgs_old)
+            for img in list(imgs_old):
+                _ = shutil.copy(img, imgs_new)
+            for lbl in list(lbls_old):
+                _ = shutil.copy(lbl, lbls_new)
+    data_yaml = Path(dirs[0]) / 'data.yaml'
+    _ = shutil.copy(data_yaml, out_dir)
+            
+            
 def fix_data_yaml(dir: str) -> None:
     """Paths to image directories have been inconsistent. This overwrites the datasets' yaml files 
     to give them consistent paths such as train/images, rather than longer relative ones.
@@ -110,7 +138,8 @@ def model_with_wb(
     id: str,
     model: str,
     weights: str,
-    dataset: roboflow.core.dataset.Dataset,
+    # dataset: roboflow.core.dataset.Dataset,
+    dataset: Path,
     project: str = 'capstone',
     imgsz: int = 640,
     patience: int = 10,
@@ -140,7 +169,7 @@ def model_with_wb(
         exist_ok (bool, optional): Whether to overwrite a previous run of the same name. Defaults to True.
         **kwargs: Additional named args to pass to YOLO trainer.
     """    
-    data_path = f'{dataset.location}/data.yaml'
+    data_path = dataset / 'data.yaml'
     print(f'\n TRAINING MODEL {id} ::::::::')
     with wandb.init(project = project, name = id) as run:
         if model == 'yolo':
@@ -187,14 +216,29 @@ if __name__ == '__main__':
         raise ValueError('Must include at least one type of run')
     # set project directory and setup project
     PROJECT_DIR = Path(args.project_dir)
-    proj_name = 'cap-detect'
-    proj = setup(PROJECT_DIR, proj_name, args.data_name)
-    datasets = prep_datasets(proj, 
-                            #  versions = [10, 9],
-                            versions = [2, 3],
-                             dirs = ['cams_full', 'cams_tile'],
-                             ids = ['full', 'tile'],
-                             overwrite = args.overwrite)
+    data_dir = PROJECT_DIR / args.data_name
+    proj_names = ['cap-detect', 'vista-detect']
+    projs = setup(PROJECT_DIR, proj_names, args.data_name)
+    
+    # prep sv
+    sv_datasets = prep_datasets(projs['cap-detect'], 
+                                #  versions = [10, 9],
+                                versions = [2, 5],
+                                dirs = ['sv_full', 'sv_tile'],
+                                ids = ['full', 'tile'],
+                                overwrite = args.overwrite)
+    # prep vista
+    vis_datasets = prep_datasets(projs['vista-detect'],
+                                 versions = [2, 4],
+                                 dirs = ['vis_full', 'vis_tile'],
+                                 ids = ['full', 'tile'],
+                                 overwrite = args.overwrite)
+    datasets = { 
+                'full': data_dir / 'comb_full', 
+                'tile': data_dir / 'comb_tile'
+                }
+    combine_imgs(dirs = [data_dir / 'sv_full', data_dir / 'vis_full'], out_dir = datasets['full'])
+    combine_imgs(dirs = [data_dir / 'sv_tile', data_dir / 'vis_tile'], out_dir = datasets['tile'])
     
     # define params for runs
     weights = { 'yolo': 'yolov8s.pt', 'detr': 'rtdetr-l.pt'}
