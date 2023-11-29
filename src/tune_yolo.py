@@ -37,7 +37,7 @@ def tune_with_wb(
     else:
         log_mode = 'offline'
     print(f'\n TUNING MODEL {id} ::::::::')
-    with wandb.init(project = project, name = f'{id}_tune', magic = True, mode = log_mode) as run:
+    with wandb.init(project = project, job_type = f'{id}_tune', mode = log_mode, reinit = True) as run:
         model.tune(
             data = data_path,
             epochs = epochs,
@@ -53,6 +53,7 @@ def tune_with_wb(
             # tune_dir = tune_dir,
             **kwargs
         )
+    return None
     
 
 def train_with_wb(
@@ -73,7 +74,7 @@ def train_with_wb(
     else:
         log_mode = 'offline'
     print(f'\n TRAINING MODEL {id} ::::::::')
-    with wandb.init(project = project, name = f'{id}_best', magic = True, mode = log_mode) as run:
+    with wandb.init(project = project, name = f'{id}_best', job_type = 'best', mode = log_mode) as run:
         res = model.train(
             data = data_path,
             epochs = epochs,
@@ -145,6 +146,7 @@ if __name__ == '__main__':
         batch = args.batch,
         save = False,  
         iterations = args.iterations, 
+        exist_ok = False,
         val = False,
         log = log,
         degrees = 15.0,
@@ -166,6 +168,7 @@ if __name__ == '__main__':
             epochs = args.train_epochs,
             batch = args.batch,
             save = True,
+            exist_ok = True,
             log = log,
             cos_lr = True,
             optimizer = 'AdamW',
