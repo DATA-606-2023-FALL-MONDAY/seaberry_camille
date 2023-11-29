@@ -74,26 +74,28 @@ def combine_imgs(dirs: list,
     for split in splits:
         # make split directories for combined dataset
         split_new = Path(out_dir) / split  # e.g. comb_detect/train
-        split_new.mkdir(parents=True, exist_ok=True)
+        # split_new.mkdir(parents=True, exist_ok=True)
         # make img, label directories for each split in combined dataset
-        imgs_new = split_new / 'images'
+        imgs_new = split_new / 'images' # e.g. comb_detect/train/images
         lbls_new = split_new / 'labels'
-        imgs_new.mkdir(parents=True,
-                       exist_ok=True)  # e.g. comb_detect/train/images
-        lbls_new.mkdir(parents=True, exist_ok=True)
 
         for dataset in dirs:
             # copy contents of img, label directories from each dataset to combined dataset by split
             split_old = Path(dataset) / split  # e.g. sv_full/train
-            imgs_old = (split_old / 'images').glob('*')
-            lbls_old = (split_old / 'labels').glob('*')
-            print(imgs_old)
-            for img in list(imgs_old):
-                _ = shutil.copy(img, imgs_new)
-            for lbl in list(lbls_old):
-                _ = shutil.copy(lbl, lbls_new)
+            imgs_old = split_old / 'images/'
+            lbls_old = split_old / 'labels/'
+            _ = shutil.copytree(src = imgs_old, dst = imgs_new, dirs_exist_ok = True)
+            _ = shutil.copytree(src = lbls_old, dst = lbls_new, dirs_exist_ok = True)
+            
+            # imgs_old = (split_old / 'images').glob('*')
+            # lbls_old = (split_old / 'labels').glob('*')
+            
+            # for img in list(imgs_old):
+            #     _ = shutil.copy(img, imgs_new)
+            # for lbl in list(lbls_old):
+            #     _ = shutil.copy(lbl, lbls_new)
     data_yaml = Path(dirs[0]) / 'data.yaml'
-    _ = shutil.copy(data_yaml, out_dir)
+    _ = shutil.copy(src = data_yaml, dst = out_dir / 'data.yaml') # copy & replace
 
 
 def fix_data_yaml(dir: str) -> None:
@@ -189,8 +191,10 @@ def model_with_wb(
     with wandb.init(project=project, name=id, magic=True, mode=log_mode) as run:
         if model == 'yolo':
             model = YOLO(weights)
+            amp = True
         elif model == 'detr':
             model = RTDETR(weights)
+            amp = False
         else:
             raise ValueError(f'Invalid model {model}')
         model.train(
@@ -207,7 +211,8 @@ def model_with_wb(
             # optimizer = 'AdamW',
             degrees=15,
             cos_lr=True,
-            amp=True,
+            # amp=True,
+            amp = amp,
             name=f'{id}_train',
             **kwargs)
         # clear torch cache
