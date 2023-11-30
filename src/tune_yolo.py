@@ -67,6 +67,7 @@ def train_with_wb(
     project: str = 'capstone',
     epochs: int = 5,
     batch: int = 16,
+    patience: int = 5,
     save: bool = True,
     exist_ok: bool = True,
     log: bool = True,
@@ -83,7 +84,9 @@ def train_with_wb(
             data=data_path,
             epochs=epochs,
             batch=batch,
+            patience=patience,
             save=save,
+            save_period=10,
             exist_ok=exist_ok,
             single_cls=True,
             amp=False,
@@ -97,7 +100,7 @@ def train_with_wb(
     return res
 
 
-def get_model_type(run: str, model_type: str):
+def get_model_type(run: str, model_type: str | None):
     if model_type is not None:
         model_type = model_type
     else:
@@ -111,21 +114,9 @@ def get_model_type(run: str, model_type: str):
     return model
 
 
-def main(
-    run: str,
-    model_type: str,
-    dataset: str,
-    project_dir: str,
-    data_name: str,
-    tune_epochs: int,
-    train_epochs: int,
-    batch: int,
-    iterations: int,
-    train: bool,
-    val: bool,
-    no_log: bool,
-    label: str
-):
+def main(run: str, model_type: str, dataset: str, project_dir: str,
+         data_name: str, tune_epochs: int, train_epochs: int, batch: int,
+         iterations: int, train: bool, val: bool, no_log: bool, label: str):
     PROJECT_DIR = Path(project_dir)
     setup(PROJECT_DIR)
     data_dir = PROJECT_DIR / data_name
@@ -139,7 +130,8 @@ def main(
         short_id = label
     weights = PROJECT_DIR / 'runs/detect' / model_id / 'weights' / 'best.pt'
     # creates e.g. YOLO('train/weights/best.pt')
-    model = get_model_type(model_id, model_type)(weights)
+    model = get_model_type(model_id, model_type)(str(weights))
+    print(model.info())
 
     log = not no_log
 
@@ -153,11 +145,11 @@ def main(
         iterations=iterations,
         exist_ok=False,
         val=False,
-        log=log,
-        degrees=15.0,
-        hsv_h=0.4,
-        cos_lr=True,
-        optimizer='AdamW')
+        log=log)
+        #    degrees=15.0,
+        #    hsv_h=0.4,
+        # cos_lr=True,
+        # optimizer='AdamW')
 
     # need to get best params from tune based on last run
     if train:
@@ -166,19 +158,17 @@ def main(
         best_yaml = last_run / 'best_hyperparameters.yaml'
         with open(best_yaml, 'r') as f:
             best_params = yaml.safe_load(f)
-        best_res = train_with_wb(
-            id=short_id,
-            model=model,
-            dataset=dataset,
-            epochs=train_epochs,
-            batch=batch,
-            save=True,
-            exist_ok=True,
-            log=log,
-            cos_lr=True,
-            optimizer='AdamW',
-            **best_params
-        )
+        best_res = train_with_wb(id=short_id,
+                                 model=model,
+                                 dataset=dataset,
+                                 epochs=train_epochs,
+                                 batch=batch,
+                                 save=True,
+                                 exist_ok=True,
+                                 log=log,
+                                #  cos_lr=True,
+                                 optimizer='AdamW',
+                                 **best_params)
         pprint(best_res)
 
         if val:
