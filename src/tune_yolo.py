@@ -124,7 +124,8 @@ def main(
     train: bool,
     val: bool,
     no_log: bool,
-    label: str
+    label: str,
+    task: str
 ):
     PROJECT_DIR = Path(project_dir)
     setup(PROJECT_DIR)
@@ -137,7 +138,7 @@ def main(
         short_id = model_id.replace('_train', '')
     else:
         short_id = label
-    weights = PROJECT_DIR / 'runs/detect' / model_id / 'weights' / 'best.pt'
+    weights = PROJECT_DIR / 'runs' / task / model_id / 'weights' / 'best.pt'
     # creates e.g. YOLO('train/weights/best.pt')
     model = get_model_type(model_id, model_type)(weights)
 
@@ -215,6 +216,8 @@ if __name__ == '__main__':
                       help='Do not post logs to wandb online')
     prsr.add_argument('-l', '--label', type=str,
                       help='Custom label to override run name')
+    prsr.add_argument('-k', '--task', type = str, default = 'detect', help = 'Task to perform, either detect or classify',
+                      choices = ['detect', 'classify'])
     args = prsr.parse_args()
     pprint(args)
 

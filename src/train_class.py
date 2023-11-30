@@ -3,6 +3,7 @@ import os
 import roboflow
 from roboflow import Roboflow
 from pathlib import Path
+import ultralytics
 from ultralytics import YOLO, RTDETR
 import wandb
 from pathlib import Path
@@ -11,6 +12,7 @@ from ultralytics import settings as ul_settings
 import argparse
 from pprint import pprint
 import shutil
+import warnings
 
 def setup(project_dir: Path, data_name: str = 'data') -> roboflow.core.project.Project:
     """Setup working directory, environment variables, ultralytics dataset directory, roboflow project, and wandb logging.
@@ -34,6 +36,9 @@ def setup(project_dir: Path, data_name: str = 'data') -> roboflow.core.project.P
     
     rf = Roboflow(api_key = os.getenv('ROBOFLOW_KEY'))
     proj = rf.workspace('seaberry').project('cap-class')
+    
+    # ignore warnings with corrupt image
+    warnings.filterwarnings(action = 'ignore', module = 'ultralytics')
     return proj
 
 def download_rf_imgs(proj: roboflow.core.project.Project, 
@@ -112,6 +117,7 @@ def model_with_wb(
     freeze: int = 0,
     save: bool = True,
     exist_ok: bool = True,
+    log: bool = True,
     **kwargs
 ) -> None:
     """Train a YOLO model and log to wandb.
@@ -133,8 +139,12 @@ def model_with_wb(
         **kwargs: Additional named args to pass to YOLO trainer.
     """    
     data_path = f'{dataset.location}' # no data.yaml--that's just for detection
+    if log:
+        log_mode = 'online'
+    else:
+        log_mode = 'offline'
     print(f'\n TRAINING MODEL {id} ::::::::')
-    with wandb.init(project = project, name = id) as run:
+    with wandb.init(project = project, name = id, mode = log_mode, job_type = 'classify') as run:
         model.train(data = data_path,
                     imgsz = imgsz,
                     patience = patience,
@@ -148,6 +158,79 @@ def model_with_wb(
                     amp = False,
                     name = f'{id}_train',
                     **kwargs)
+        
+def tune_with_wb(
+    id: str,
+    model: str,
+    dataset: Path,
+    # tune_dir: str,
+    project: str = 'capstone',
+    epochs: int = 5,
+    batch: int = 16,
+    save: bool = True,
+    exist_ok: bool = True,
+    log: bool = True,
+    iterations: int = 10,
+    val: bool = False,
+    **kwargs
+) -> str:
+    data_path = dataset / 'data.yaml'
+    if log:
+        log_mode = 'online'
+    else:
+        log_mode = 'offline'
+    print(f'\n TUNING MODEL {id} ::::::::')
+    with wandb.init(job_type=f'{id}_tune', mode=log_mode, reinit=True) as run:
+        model.tune(
+            data=data_path,
+            epochs=epochs,
+            iterations=iterations,
+            batch=batch,
+            save=save,
+            exist_ok=exist_ok,
+            single_cls=True,
+            amp=False,
+            plots=False,
+            val=val,
+            name=f'{id}_tune',
+            # tune_dir = tune_dir,
+            **kwargs
+        )
+    last_run = ultralytics.utils.files.get_latest_run()
+    print(f'\n LAST RUN: {last_run}')
+    return Path(last_run).parent.parent
+
+def main(
+    project_dir: str,  
+    data_name: str,  
+    epochs: int,   
+    batch: int,
+    overwrite: bool,
+    use_freeze: bool,
+    freeze: int | None,
+    no_log: bool
+) -> None:
+    PROJECT_DIR = Path(project_dir)
+    proj = setup(PROJECT_DIR, data_name)
+    log = not no_log
+    datasets = prep_datasets(proj = proj,
+                             versions = [2],
+                             dirs = ['cams_crop'],
+                             ids = ['crop'],
+                             overwrite = overwrite)
+    wts = { 'yolo_s': 'yolov8s-cls.pt', 'yolo_m': 'yolov8m-cls.pt', 'yolo_l': 'yolov8l-cls.pt' }
+    base_params = { 'epochs': epochs, 'batch': batch }
+    params = {}
+    
+    for key, wt in wts.items():
+        mod = f'{key}_class'
+        params[mod] = { 'dataset': datasets['crop'], 'model': YOLO(wt, task = 'classify') }
+    
+    for key, ps in params.items():
+        run_params = { **base_params, **ps }
+        model_with_wb(key, log = log, **run_params)
+        
+    wandb.finish()
 
 if __name__ == '__main__':
     prsr = argparse.ArgumentParser(prog = 'train_yolo.py', description = 'Train YOLO models on roboflow datasets.')
@@ -158,30 +241,10 @@ if __name__ == '__main__':
     prsr.add_argument('-o', '--overwrite', action = 'store_true', help = 'Overwrite existing datasets')
     prsr.add_argument('-z', '--use_freeze', action = 'store_true', help = 'Include runs with frozen layers')
     prsr.add_argument('-f', '--freeze', type = int, default = 7, help = 'Number of layers to freeze')
+    prsr.add_argument('-L', '--no_log', action = 'store_true', help = 'Do not post logs to wandb')
     args = prsr.parse_args()
     pprint(args)
     
-    # set project directory and setup project
-    PROJECT_DIR = Path(args.project_dir)
-    proj = setup(PROJECT_DIR, args.data_name)
-    datasets = prep_datasets(proj, 
-                             versions = [2], dirs = ['cams_crop'], ids = ['crop'],
-                             overwrite = args.overwrite)
-    
-    # define params for runs
-    # only has yolo models for classification
-    wts = { 'yolo': 'yolov8m-cls.pt' }
-    base_params = { 'epochs': args.epochs, 'batch': args.batch }
-    params = {}
-    params['yolo_class'] = { 'dataset': datasets['crop'], 'model': YOLO(wts['yolo'], task = 'classify') }
-    
-    if args.use_freeze:
-        params['yolo_class_frz'] = { 'dataset': datasets['crop'], 'model': YOLO(wts['yolo'], task = 'classify'), 'freeze': args.freeze }
-    
-    for id, ps in params.items():
-        run_params = { **base_params, **ps }
-        model_with_wb(id, **run_params)
-    
-    wandb.finish()
+    main(**vars(args))
 
 
