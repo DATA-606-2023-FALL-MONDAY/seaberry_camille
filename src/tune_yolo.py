@@ -31,15 +31,23 @@ def tune_with_wb(
     log: bool = True,
     iterations: int = 10,
     val: bool = False,
+    task: str = 'detect',
     **kwargs
 ) -> str:
-    data_path = dataset / 'data.yaml'
+    if task == 'detect':
+        data_path = dataset / 'data.yaml'
+        single_cls = True
+    else: 
+        data_path = dataset
+        single_cls = False
+        
     if log:
         log_mode = 'online'
     else:
         log_mode = 'offline'
+        
     print(f'\n TUNING MODEL {id} ::::::::')
-    with wandb.init(job_type=f'{id}_tune', mode=log_mode, reinit=True) as run:
+    with wandb.init(job_type=f'{id}_tune', mode=log_mode, reinit=True, project = project) as run:
         model.tune(
             data=data_path,
             epochs=epochs,
@@ -47,7 +55,7 @@ def tune_with_wb(
             batch=batch,
             save=save,
             exist_ok=exist_ok,
-            single_cls=True,
+            single_cls=single_cls,
             amp=False,
             plots=False,
             val=val,
@@ -55,9 +63,11 @@ def tune_with_wb(
             # tune_dir = tune_dir,
             **kwargs
         )
-    last_run = ultralytics.utils.files.get_latest_run()
-    print(f'\n LAST RUN: {last_run}')
-    return Path(last_run).parent.parent
+        print(run)
+    # last_run = ultralytics.utils.files.get_latest_run()
+    # print(f'\n LAST RUN: {last_run}')
+    # return Path(last_run).parent.parent
+    
 
 
 def train_with_wb(
@@ -67,13 +77,20 @@ def train_with_wb(
     project: str = 'capstone',
     epochs: int = 5,
     batch: int = 16,
-    patience: int = 5,
+    patience: int = 10,
     save: bool = True,
     exist_ok: bool = True,
     log: bool = True,
+    task: str = 'detect',
     **kwargs
 ) -> dict:
-    data_path = dataset / 'data.yaml'
+    if task == 'detect':
+        data_path = dataset / 'data.yaml'
+        single_cls = True
+    else: 
+        data_path = dataset
+        single_cls = False
+        
     if log:
         log_mode = 'online'
     else:
@@ -88,15 +105,16 @@ def train_with_wb(
             save=save,
             save_period=10,
             exist_ok=exist_ok,
-            single_cls=True,
+            single_cls=single_cls,
             amp=False,
             plots=True,
             name=f'{id}_best',
             **kwargs
         )
-        recall = res.results_dict['metrics/recall(B)']
-        map50 = res.results_dict['metrics/mAP50(B)']
-        wandb.log({'recall': recall, 'map50': map50, **kwargs})
+        wandb.log(res.results_dict)
+        # recall = res.results_dict['metrics/recall(B)']
+        # map50 = res.results_dict['metrics/mAP50(B)']
+        # wandb.log({'recall': recall, 'map50': map50, **kwargs})
     return res
 
 
@@ -148,7 +166,7 @@ def main(
 
     log = not no_log
 
-    last_run = tune_with_wb(
+    tune_with_wb(
         id=short_id,
         model=model,
         dataset=dataset,
@@ -156,13 +174,15 @@ def main(
         batch=batch,
         save=False,
         iterations=iterations,
-        exist_ok=False,
+        exist_ok=True,
         val=False,
+        task = task,
         log=log)
         #    degrees=15.0,
         #    hsv_h=0.4,
         # cos_lr=True,
         # optimizer='AdamW')
+    last_run = PROJECT_DIR / 'runs' / task / 'tune'
 
     # need to get best params from tune based on last run
     if train:
@@ -178,6 +198,7 @@ def main(
                                  batch=batch,
                                  save=True,
                                  exist_ok=True,
+                                 task = task,
                                  log=log,
                                 #  cos_lr=True,
                                  optimizer='AdamW',

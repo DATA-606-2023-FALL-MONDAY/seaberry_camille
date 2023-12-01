@@ -158,47 +158,6 @@ def model_with_wb(
                     amp = False,
                     name = f'{id}_train',
                     **kwargs)
-        
-def tune_with_wb(
-    id: str,
-    model: str,
-    dataset: Path,
-    # tune_dir: str,
-    project: str = 'capstone',
-    epochs: int = 5,
-    batch: int = 16,
-    save: bool = True,
-    exist_ok: bool = True,
-    log: bool = True,
-    iterations: int = 10,
-    val: bool = False,
-    **kwargs
-) -> str:
-    data_path = dataset / 'data.yaml'
-    if log:
-        log_mode = 'online'
-    else:
-        log_mode = 'offline'
-    print(f'\n TUNING MODEL {id} ::::::::')
-    with wandb.init(job_type=f'{id}_tune', mode=log_mode, reinit=True) as run:
-        model.tune(
-            data=data_path,
-            epochs=epochs,
-            iterations=iterations,
-            batch=batch,
-            save=save,
-            exist_ok=exist_ok,
-            single_cls=True,
-            amp=False,
-            plots=False,
-            val=val,
-            name=f'{id}_tune',
-            # tune_dir = tune_dir,
-            **kwargs
-        )
-    last_run = ultralytics.utils.files.get_latest_run()
-    print(f'\n LAST RUN: {last_run}')
-    return Path(last_run).parent.parent
 
 def main(
     project_dir: str,  
