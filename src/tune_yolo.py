@@ -166,47 +166,48 @@ def main(
 
     log = not no_log
 
+    # clear previous tune runs
+    tune_dir = PROJECT_DIR / 'runs' / task / 'tune'
+    if tune_dir.exists():
+        os.system(f'rm -rf {tune_dir}')
+        
     tune_with_wb(
         id=short_id,
         model=model,
         dataset=dataset,
         epochs=tune_epochs,
         batch=batch,
-        save=False,
+        save=True,
         iterations=iterations,
         exist_ok=True,
         val=False,
         task = task,
+        optimizer = 'AdamW',
+        degrees = 15.0,
+        hsv_h = 0.4,
         log=log)
-        #    degrees=15.0,
-        #    hsv_h=0.4,
-        # cos_lr=True,
-        # optimizer='AdamW')
-    last_run = PROJECT_DIR / 'runs' / task / 'tune'
+    
 
-    # need to get best params from tune based on last run
     if train:
         # get best params from tune
-        # last_run = PROJECT_DIR / 'runs/detect/tune'
-        best_yaml = last_run / 'best_hyperparameters.yaml'
-        with open(best_yaml, 'r') as f:
-            best_params = yaml.safe_load(f)
+        last_run = PROJECT_DIR / 'runs' / task / 'tune'
+        tuned_wts = last_run / 'weights' / 'best.pt'
+        tuned_model = get_model_type(model_id, model_type)(str(tuned_wts))
+        # mistake I'd been making was to read in best params and pass those in too
         best_res = train_with_wb(id=short_id,
-                                 model=model,
+                                 model=tuned_model,
                                  dataset=dataset,
                                  epochs=train_epochs,
                                  batch=batch,
                                  save=True,
                                  exist_ok=True,
                                  task = task,
-                                 log=log,
-                                #  cos_lr=True,
-                                 optimizer='AdamW',
-                                 **best_params)
+                                 optimizer = 'AdamW',
+                                 log=log)
         pprint(best_res)
 
         if val:
-            model.val()
+            model.val(exist_ok=True)
 
     wandb.finish()
 
