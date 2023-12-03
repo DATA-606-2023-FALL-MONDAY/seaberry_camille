@@ -208,7 +208,7 @@ def model_with_wb(
             exist_ok=exist_ok,
             single_cls=True,
             # lr0 = 1e-3,
-            # optimizer = 'AdamW',
+            optimizer = 'AdamW',
             degrees=15,
             cos_lr=True,
             # amp=True,
@@ -272,6 +272,11 @@ if __name__ == '__main__':
                       '--no_log',
                       action='store_true',
                       help='Do not post logs to wandb online')
+    prsr.add_argument('-m',
+                      '--models',
+                      nargs = '+',
+                      choices = ['yolo_full', 'yolo_tile', 'detr_full', 'detr_tile', 'yolo_full_frz', 'yolo_tile_frz', 'detr_full_frz', 'detr_tile_frz'],
+                      help = 'Names of models to train')
     args = prsr.parse_args()
     pprint(args)
 
@@ -303,30 +308,35 @@ if __name__ == '__main__':
     # define params for runs
     weights = {'yolo': f'yolov8{args.yolo_size}.pt', 'detr': 'rtdetr-l.pt'}
     base_params = {'epochs': args.epochs, 'batch': args.batch, 'log': not args.no_log}
-    params = {}
-    MODES = {
+    models = {
         'yolo_full': { 'dataset': datasets['full'], 'model': 'yolo'},
         'yolo_tile': { 'dataset': datasets['tile'], 'model': 'yolo'},
         'detr_full': { 'dataset': datasets['full'], 'model': 'detr'},
         'detr_tile': { 'dataset': datasets['tile'], 'model': 'detr'}
     }
+    for key, val in models.items():
+        frz = f'{key}_frz'
+        models[frz] = {**val, 'freeze': args.freeze}
+    
+    params = models[args.models]
+        
     # check which modes to include: base, freeze, tile, freeze+tile, plus may not include detr
-    if not args.skip_base:
-        params['yolo_full'] = MODES['yolo_full']
-        if not args.yolo_only:
-            params['detr_full'] = MODES['detr_full']
-    if args.use_tile:
-        params['yolo_tile'] = MODES['yolo_tile']
-        if not args.yolo_only:
-            params['detr_tile'] = MODES['detr_tile']
-    if args.use_freeze:
-        params['yolo_full_frz'] = {**MODES['yolo_full'], 'freeze': args.freeze}
-        if not args.yolo_only:
-            params['detr_full_frz'] = {**MODES['detr_full'], 'freeze': args.freeze}
-    if args.use_tile and args.use_freeze:
-        params['yolo_tile_frz'] = {**MODES['yolo_tile'], 'freeze': args.freeze}
-        if not args.yolo_only:
-            params['detr_tile_frz'] = {**MODES['detr_tile'], 'freeze': args.freeze}
+    # if not args.skip_base:
+    #     params['yolo_full'] = MODES['yolo_full']
+    #     if not args.yolo_only:
+    #         params['detr_full'] = MODES['detr_full']
+    # if args.use_tile:
+    #     params['yolo_tile'] = MODES['yolo_tile']
+    #     if not args.yolo_only:
+    #         params['detr_tile'] = MODES['detr_tile']
+    # if args.use_freeze:
+    #     params['yolo_full_frz'] = {**MODES['yolo_full'], 'freeze': args.freeze}
+    #     if not args.yolo_only:
+    #         params['detr_full_frz'] = {**MODES['detr_full'], 'freeze': args.freeze}
+    # if args.use_tile and args.use_freeze:
+    #     params['yolo_tile_frz'] = {**MODES['yolo_tile'], 'freeze': args.freeze}
+    #     if not args.yolo_only:
+    #         params['detr_tile_frz'] = {**MODES['detr_tile'], 'freeze': args.freeze}
 
     for id, ps in params.items():
         run_params = {**base_params, **ps}

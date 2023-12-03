@@ -7,6 +7,7 @@ import wandb
 from dotenv import load_dotenv
 import argparse
 from pprint import pprint
+import shutil
 import torch
 import yaml
 
@@ -131,6 +132,21 @@ def get_model_type(run: str, model_type: str | None):
         raise ValueError(f'Invalid model type {model_type}')
     return model
 
+def export_best(
+    model: ultralytics.engine.model,
+    wts_path: str | Path,
+    short_id: str, 
+    outdir: str | Path
+):
+    # export, then move to outdir labeled with short_id
+    fn = f'{short_id}_tuned.torchscript'
+    model.export(format = 'torchscript') # in same dir as best.pt
+    # move to outdir
+    outpath = outdir / fn
+    shutil.move(wts_path, outpath)
+    return outpath
+    
+
 
 def main(
     run: str,
@@ -186,12 +202,12 @@ def main(
         degrees = 15.0,
         hsv_h = 0.4,
         log=log)
-    
+    last_run = PROJECT_DIR / 'runs' / task / 'tune'
+    tuned_wts = last_run / 'weights' / 'best.pt'
+    export_best(model, tuned_wts, short_id, PROJECT_DIR / 'best_wts')
 
     if train:
         # get best params from tune
-        last_run = PROJECT_DIR / 'runs' / task / 'tune'
-        tuned_wts = last_run / 'weights' / 'best.pt'
         tuned_model = get_model_type(model_id, model_type)(str(tuned_wts))
         # mistake I'd been making was to read in best params and pass those in too
         best_res = train_with_wb(id=short_id,
