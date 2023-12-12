@@ -312,11 +312,12 @@ if __name__ == '__main__':
         'yolo_full': { 'dataset': datasets['full'], 'model': 'yolo'},
         'yolo_tile': { 'dataset': datasets['tile'], 'model': 'yolo'},
         'detr_full': { 'dataset': datasets['full'], 'model': 'detr'},
-        'detr_tile': { 'dataset': datasets['tile'], 'model': 'detr'}
+        'detr_tile': { 'dataset': datasets['tile'], 'model': 'detr'},
+        'yolo_full_frz': { 'dataset': datasets['full'], 'model': 'yolo', 'freeze': args.freeze},
+        'yolo_tile_frz': { 'dataset': datasets['tile'], 'model': 'yolo', 'freeze': args.freeze},
+        'detr_full_frz': { 'dataset': datasets['full'], 'model': 'detr', 'freeze': args.freeze},
+        'detr_tile_frz': { 'dataset': datasets['tile'], 'model': 'detr', 'freeze': args.freeze}
     }
-    for key, val in models.items():
-        frz = f'{key}_frz'
-        models[frz] = {**val, 'freeze': args.freeze}
     
     params = models[args.models]
         
