@@ -4,7 +4,7 @@
 # chosing yolo_full, yolo_tile, and detr_full_frz
 # also transfer tiled to comb_full dataset
 rm -rf runs/detect/*tune*
-# rm -rf runs/detect/*best
+rm -rf runs/detect/*best
 
 python3 ./src/tune_yolo.py yolo_full_train \
     --dataset comb_full \

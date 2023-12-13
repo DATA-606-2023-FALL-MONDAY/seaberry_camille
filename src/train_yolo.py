@@ -191,12 +191,13 @@ def model_with_wb(
     with wandb.init(project=project, name=id, magic=True, mode=log_mode) as run:
         if model == 'yolo':
             model = YOLO(weights)
-            amp = True
+            # amp = True
         elif model == 'detr':
             model = RTDETR(weights)
-            amp = False
+            # amp = False
         else:
             raise ValueError(f'Invalid model {model}')
+        amp = True
         model.train(
             data=data_path,
             imgsz=imgsz,
@@ -208,12 +209,12 @@ def model_with_wb(
             exist_ok=exist_ok,
             single_cls=True,
             # lr0 = 1e-3,
-            optimizer = 'AdamW',
+            # optimizer = 'AdamW',
             degrees=15,
             cos_lr=True,
-            # amp=True,
             amp = amp,
             name=f'{id}_train',
+            close_mosaic = 5,
             **kwargs)
         # clear torch cache
         # torch.cuda.empty_cache()
@@ -274,9 +275,7 @@ if __name__ == '__main__':
                       help='Do not post logs to wandb online')
     prsr.add_argument('-m',
                       '--models',
-                      nargs = '+',
-                      choices = ['yolo_full', 'yolo_tile', 'detr_full', 'detr_tile', 'yolo_full_frz', 'yolo_tile_frz', 'detr_full_frz', 'detr_tile_frz'],
-                      help = 'Names of models to train')
+                      help = 'Comma-separated names of models to train')
     args = prsr.parse_args()
     pprint(args)
 
@@ -308,7 +307,7 @@ if __name__ == '__main__':
     # define params for runs
     weights = {'yolo': f'yolov8{args.yolo_size}.pt', 'detr': 'rtdetr-l.pt'}
     base_params = {'epochs': args.epochs, 'batch': args.batch, 'log': not args.no_log}
-    models = {
+    MODELS = {
         'yolo_full': { 'dataset': datasets['full'], 'model': 'yolo'},
         'yolo_tile': { 'dataset': datasets['tile'], 'model': 'yolo'},
         'detr_full': { 'dataset': datasets['full'], 'model': 'detr'},
@@ -318,26 +317,30 @@ if __name__ == '__main__':
         'detr_full_frz': { 'dataset': datasets['full'], 'model': 'detr', 'freeze': args.freeze},
         'detr_tile_frz': { 'dataset': datasets['tile'], 'model': 'detr', 'freeze': args.freeze}
     }
-    print(f'\n MODELS :::::::: {args.models}')
-    params = { k: models[k] for k in args.models }
-        
-    # check which modes to include: base, freeze, tile, freeze+tile, plus may not include detr
-    # if not args.skip_base:
-    #     params['yolo_full'] = MODES['yolo_full']
-    #     if not args.yolo_only:
-    #         params['detr_full'] = MODES['detr_full']
-    # if args.use_tile:
-    #     params['yolo_tile'] = MODES['yolo_tile']
-    #     if not args.yolo_only:
-    #         params['detr_tile'] = MODES['detr_tile']
-    # if args.use_freeze:
-    #     params['yolo_full_frz'] = {**MODES['yolo_full'], 'freeze': args.freeze}
-    #     if not args.yolo_only:
-    #         params['detr_full_frz'] = {**MODES['detr_full'], 'freeze': args.freeze}
-    # if args.use_tile and args.use_freeze:
-    #     params['yolo_tile_frz'] = {**MODES['yolo_tile'], 'freeze': args.freeze}
-    #     if not args.yolo_only:
-    #         params['detr_tile_frz'] = {**MODES['detr_tile'], 'freeze': args.freeze}
+    if len(args.models) > 0:
+        chosen_mods = args.models.split(',')
+    else:
+        chosen_mods = []
+        if not args.skip_base:
+            chosen_mods.append('yolo_full')
+            if not args.yolo_only:
+                chosen_mods.append('detr_full')
+        if args.use_tile:
+            chosen_mods.append('yolo_tile')
+            if not args.yolo_only:
+                chosen_mods.append('detr_tile')
+        if args.use_freeze:
+            chosen_mods.append('yolo_full_frz')
+            if not args.yolo_only:
+                chosen_mods.append('detr_full_frz')
+        if args.use_tile and args.use_freeze:
+            chosen_mods.append('yolo_tile_frz')
+            if not args.yolo_only:
+                chosen_mods.append('detr_tile_frz')
+    print(f'\n MODELS ::::::::')
+    pprint(chosen_mods)
+
+    params = { k: v for k, v in MODELS.items() if k in chosen_mods }
 
     for id, ps in params.items():
         run_params = {**base_params, **ps}
