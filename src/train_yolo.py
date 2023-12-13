@@ -318,8 +318,8 @@ if __name__ == '__main__':
         'detr_full_frz': { 'dataset': datasets['full'], 'model': 'detr', 'freeze': args.freeze},
         'detr_tile_frz': { 'dataset': datasets['tile'], 'model': 'detr', 'freeze': args.freeze}
     }
-    
-    params = models[args.models]
+    print(f'\n MODELS :::::::: {args.models}')
+    params = { k: models[k] for k in args.models }
         
     # check which modes to include: base, freeze, tile, freeze+tile, plus may not include detr
     # if not args.skip_base:
