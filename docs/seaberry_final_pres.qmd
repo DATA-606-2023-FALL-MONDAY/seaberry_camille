@@ -51,7 +51,7 @@ lightbox: auto
 | Ultralytics YOLOv8 | Models with built-in modules for training, tuning, & validation |
 | Pytorch            | Underlies Ultralytics models                                    |
 | Roboflow           | Dataset creation & management                                   |
-| Weights & Balances | Experiment tracking                                             |
+| Weights & Biases   | Experiment tracking                                             |
 | Paperspace         | Virtual machine (8 CPUs, 16GB GPU)                               |
 
 
