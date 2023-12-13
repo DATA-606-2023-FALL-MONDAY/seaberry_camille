@@ -4,7 +4,7 @@ model: rtdetr-l.pt
 data: /home/paperspace/seaberry_camille/data/comb_full/data.yaml
 epochs: 15
 patience: 10
-batch: 16
+batch: 8
 imgsz: 640
 save: true
 save_period: -1
@@ -22,9 +22,9 @@ deterministic: true
 single_cls: true
 rect: false
 cos_lr: true
-close_mosaic: 10
+close_mosaic: 5
 resume: false
-amp: false
+amp: true
 fraction: 1.0
 profile: false
 freeze: 20

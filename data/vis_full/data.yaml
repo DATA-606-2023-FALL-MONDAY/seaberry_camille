@@ -1,0 +1,12 @@
+names:
+- surveillance
+nc: 1
+roboflow:
+  license: CC BY 4.0
+  project: vista-detect
+  url: https://universe.roboflow.com/seaberry/vista-detect/dataset/2
+  version: 2
+  workspace: seaberry
+test: test/images
+train: train/images
+val: valid/images

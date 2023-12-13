@@ -1,29 +1,29 @@
-# 10/10 iterations complete ✅ (6026.62s)
+# 10/10 iterations complete ✅ (6161.49s)
 # Results saved to runs/detect/tune
-# Best fitness=0.21296 observed at iteration 13
-# Best fitness metrics are None
-# Best fitness model is None
+# Best fitness=0.04748 observed at iteration 9
+# Best fitness metrics are {'metrics/precision(B)': 0.28852, 'metrics/recall(B)': 0.17654, 'metrics/mAP50(B)': 0.12588, 'metrics/mAP50-95(B)': 0.03877, 'val/box_loss': 2.86873, 'val/cls_loss': 2.61389, 'val/dfl_loss': 1.80456, 'fitness': 0.04748}
+# Best fitness model is runs/detect/yolo_tile_transfer_tune
 # Best fitness hyperparameters are printed below.
 
-lr0: 0.00922
-lrf: 0.00476
-momentum: 0.76651
-weight_decay: 0.00033
-warmup_epochs: 3.07826
-warmup_momentum: 0.42203
-box: 7.68833
-cls: 0.85391
-dfl: 1.2677
-hsv_h: 0.01624
-hsv_s: 0.57581
-hsv_v: 0.52604
-degrees: 0.0
-translate: 0.10523
-scale: 0.50879
+lr0: 0.00754
+lrf: 0.00696
+momentum: 0.96521
+weight_decay: 0.00056
+warmup_epochs: 3.12176
+warmup_momentum: 0.81623
+box: 8.02944
+cls: 0.51959
+dfl: 2.24648
+hsv_h: 0.1
+hsv_s: 0.70333
+hsv_v: 0.363
+degrees: 15.0
+translate: 0.09045
+scale: 0.5842
 shear: 0.0
 perspective: 0.0
 flipud: 0.0
-fliplr: 0.46826
-mosaic: 0.85228
+fliplr: 0.5
+mosaic: 0.93019
 mixup: 0.0
 copy_paste: 0.0
