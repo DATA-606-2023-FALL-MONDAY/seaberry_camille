@@ -83,6 +83,10 @@ lightbox: auto
 
 ![YOLOv1 diagram. @R.D.G+2016](./imgs/yolo_diagram.gif)
 
+:::{.content-visible unless-format="revealjs"}
+YOLOv1 diagram. @R.D.G+2016
+:::
+
 :::
 
 ::::
@@ -118,6 +122,10 @@ After lots of trial & error, best bets for detection:
 
 ![Example tiled image](./imgs/tile_ex.jpg)
 
+:::{.content-visible unless-format="revealjs"}
+Example tiled image
+:::
+
 :::
 
 ::::
@@ -130,6 +138,8 @@ YOLO works well on tiled images, but it will need to transfer to full-sized imag
 
 ```{r}
 #| echo: false
+#| message: false
+#| warning: false 
 #| fig-width: 10
 #| fig-height: 3
 library(dplyr)
@@ -190,6 +200,10 @@ res_dfs[["train"]] |>
 
 ### Validation examples, DETR model
 
+:::{.content-visible unless-format="revealjs"}
+Validation labels; validation predictions
+:::
+
 ::: {layout-ncol=2}
 
 ![Validation labels](./imgs/val_batch0_labels_detr.jpg)
@@ -238,6 +252,9 @@ res_dfs[["tune"]] |>
 :::
 
 :::{.column width=60%}
+:::{.content-visible unless-format="revealjs"}
+Confusion matrix, YOLO medium
+:::
 ![Confusion matrix, YOLO medium](./imgs/yolo_m_matrix.png)
 :::
 
@@ -248,6 +265,9 @@ res_dfs[["tune"]] |>
 
 ### Inference
 
+:::{.content-visible unless-format="revealjs"}
+Screenshot of demo
+:::
 ![Screenshot of demo](./imgs/demo_loch_raven.png)
 
 ## Challenges
