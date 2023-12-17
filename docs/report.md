@@ -1,10 +1,19 @@
-# Proposal: Re-surveilling surveillance
+# Report: Re-surveilling surveillance
 Camille Seaberry
 
-Prepared for UMBC Data Science Master Degree Capstone with Dr. Chaojie
-Wang
+Prepared for UMBC Data Science Master’s Degree Capstone with Dr. Chaojie
+Wang, Fall 2023
 
-- https://github.com/camille-s
+- Code: https://github.com/DATA-606-2023-FALL-MONDAY/seaberry_camille
+- Presentation:
+  - Interactive: https://camille-s.github.io/capstone_pres
+  - Static:
+    https://camille-s.github.io/capstone_pres/seaberry_slides.pdf
+- App:
+  - Deployment: https://camilleseab-surveillance.hf.space/
+  - Code:
+    https://huggingface.co/spaces/camilleseab/surveillance/tree/main
+- Github: https://github.com/camille-s
 
 ## Background
 
@@ -46,22 +55,21 @@ cameras after detecting them. Because the Street View images can be
 downloaded based on their coordinates, once a camera is detected in an
 image, its location is known.
 
-For this project, I have **two major goals:**
+For this project, my original goal was to improve upon the models I
+used, including introduction of more predefined models (adding YOLO,
+among others), finer tuning of classification of camera type (including
+possibly adding automated license plate readers), more concerted
+sampling of intersections in Baltimore, and updated images. Over the
+course of the semester, I developed several variations on two model
+types for detection and one for classification to work with decent
+accuracy.
 
-1.  Improving upon the models I used, including introduction of more
-    predefined models (adding YOLO, among others), finer tuning of
-    classification of camera type (including possibly adding automated
-    license plate readers), more concerted sampling of intersections in
-    Baltimore, and updated images
-2.  Mapping of those locations to study the landscape of that layer of
-    surveillance. In the longer term, I would like to do some amount of
-    spatial analysis overlaying camera locations and socio-economic /
-    demographic data to understand any patterns in this landscape and
-    the potential burdens of surveillance on marginalized communities in
-    Baltimore.
-
-The first of these is the focus of my capstone, while the second is a
-longer-term possibility.
+Longer term, I’d like to use these models to map locations of cameras to
+study the landscape of surveillance. I would like to do some amount of
+spatial analysis overlaying camera locations and socio-economic /
+demographic data to understand any patterns in this landscape and the
+potential burdens of surveillance on marginalized communities in
+Baltimore.
 
 Therefore my **major research questions are:**
 
@@ -69,8 +77,6 @@ Therefore my **major research questions are:**
     in street images?
 2.  How accurately can deep learning models classify types of
     surveillance cameras?
-3.  What spatial patterns exist in where surveillance cameras are
-    located?
 
 ## Data
 
@@ -85,41 +91,58 @@ target would be presence / density of cameras, with geographic
 coordinates as the features (spatial regression, kriging, or other
 spatial modeling methods).
 
-### Images
+In the first version of this project, I had two data sources, but I
+recently added a third. Labeled images now come from Google Street View
+(via Sheng, Yao, and Goel (2021)), the Objects365 dataset (Shao et al.
+(2019)), and the Mapillary Vistas dataset (Neuhold et al. (2017)). There
+are two types of images, full-sized images (from all 3 sources) and
+cropped images (from Street View only). The cropped images were made in
+Roboflow by cropping the full-sized images to their objects’ bounding
+boxes. Because data came from different sources, standardizing and
+unifying annotations was a major task in this project.
 
-There are two sets of images, full-sized images and cropped images. The
-cropped images were made in Roboflow by cropping the full-sized images
-to their objects’ bounding boxes. Full-sized images’ metadata are in
-COCO JSON format, with metadata about the date of upload to Roboflow,
-licenses, categories, images, and annotations. Of these, I am using the
-data on images and annotations. Alongside this metadata are the folders
-of images. Cropped images are arranged into folders by class, following
-the Pytorch `ImageFolder` model.
+Full-sized images’ metadata are in YOLOv8 format, where each image has
+an associated text file giving bounding box coordinates and labels.
+Alongside this metadata are the folders of images. Cropped images are
+arranged into folders by class, following the Pytorch `ImageFolder`
+model.
 
 #### Source
 
-Sheng, Yao, and Goel (2021) and Shao et al. (2019), with metadata
-standardized on the Roboflow platform.
+Sheng, Yao, and Goel (2021); Shao et al. (2019); and Neuhold et al.
+(2017), with augmentation and annotation standardization done on the
+Roboflow platform.
 
 #### Size (jpg files)
 
-- Full-size images: training, validation, and testing sets are 168MB,
-  18MB, and 8.5MB, respectively
-- Cropped images: training, validation, and testing sets are 6MB, 596kB,
-  and 296kB, respectively
+- Full-size images: training, validation, and testing sets are 221MB,
+  62MB, and 34MB, respectively
+- Cropped images: training, validation, and testing sets are 4MB, 664kB,
+  and 328kB, respectively
 
 #### Dimensions after cleaning
 
 Full-sized images and annotations:
 
-| Data type   | Split      | Rows  | Columns |
-|-------------|------------|-------|---------|
-| Images      | Training   | 2,580 | 7       |
-|             | Validation | 244   | 7       |
-|             | Testing    | 121   | 7       |
-| Annotations | Training   | 4,654 | 7       |
-|             | Validation | 474   | 7       |
-|             | Testing    | 236   | 7       |
+| Data type | Split      | Files |
+|:----------|:-----------|------:|
+| Images    | Training   | 4,068 |
+|           | Validation | 1,155 |
+|           | Testing    |   617 |
+| Labels    | Training   | 4,068 |
+|           | Validation | 1,155 |
+|           | Testing    |   617 |
+
+Cropped images:
+
+| Class    | Split      | Files |
+|:---------|:-----------|------:|
+| Directed | Training   |   517 |
+|          | Validation |    75 |
+|          | Testing    |    47 |
+| Globe    | Training   |   471 |
+|          | Validation |    84 |
+|          | Testing    |    32 |
 
 #### Time period
 
@@ -127,92 +150,215 @@ N/A
 
 #### Data dictionary
 
-Note that because annotations are in a standardized format (COCO JSON),
-some columns can be disregarded for analysis but I am describing them
-here for completeness.
+In the YOLOv8 format, each image has a text file of one or more
+annotations with no headings. One row = one marked camera
 
-##### Images
-
-One row = one image
-
-| Name          | Data type | Definition                | Values        | Use                   |
-|---------------|-----------|---------------------------|---------------|-----------------------|
-| id            | Int       | Unique numeric image ID   |               | Join with annotations |
-| license       | Int       | License type              | 1 (CC BY 4.0) | Disregard             |
-| file_name     | String    | Image file name           |               | Path to read images   |
-| height        | Int       | Full image height         | 640 (uniform) |                       |
-| width         | Int       | Full image width          | 640 (uniform) |                       |
-| data_captured | Datetime  | Date uploaded to Roboflow | 2023-10-22    |                       |
-| extra         | String    | Additional notes          | empty         | Disregard             |
-
-##### Annotations
-
-One row = one marked camera
-
-| Name         | Data type      | Definition                                                                               | Values                                                   | Use                                         |
-|--------------|----------------|------------------------------------------------------------------------------------------|----------------------------------------------------------|---------------------------------------------|
-| id           | Int            | Unique numeric annotation ID                                                             |                                                          |                                             |
-| image_id     | Int            | Unique numeric image ID of corresponding image                                           |                                                          | Join with images                            |
-| category_id  | Int            | Numeric category of camera type                                                          | 1: directed, 2: globe, 3: no classification (Objects365) | Target for classification of cropped images |
-| bbox         | List of 4 ints | Bounding box of annotation in COCO coordinate format (center-x, center-y, width, height) |                                                          | Target for object detection                 |
-| area         | Float          | Area of bounding box                                                                     |                                                          | May be used as a feature in classification  |
-| segmentation | List of ints   | Coordinates of segmentation points                                                       | Empty                                                    | Disregard                                   |
-| iscrows      | Int            | Flag for presence of “crowd” in image                                                    | Binary                                                   | Disregard                                   |
-
-### Street network
-
-If I get models working well on detecting and classifying cameras in
-these older images, I’d like to create a set of new up-to-date images
-from Google Street View. To do this, following the methodology in Sheng,
-Yao, and Goel (2021), I will sample intersections from a network of
-Baltimore streets to get coordinates at which to batch download Street
-View images using Google’s API. After cleaning, the result is a
-geopandas GeoDataFrame of coordinates of street intersections extracted
-from the network.
-
-#### Source
-
-Road network geography data comes from OpenStreetMap via the OSMnx
-package (Boeing (2017)).
-
-#### Size
-
-- Full network, geopackage file: 36MB (not used for analysis)
-- Intersection coordinates, geopackage file: 3.8MB
-
-#### Dimensions after cleaning
-
-24,274 rows x 4 columns
-
-#### Time period
-
-N/A
-
-#### Data dictionary
-
-One row = one intersection node
-
-| Name     | Data type | Definition                         | Values | Use                           |
-|----------|-----------|------------------------------------|--------|-------------------------------|
-| id       | Int       | ID from the OpenStreetMap database |        |                               |
-| lon      | Float     | Longitude coordinate               | ~-76   | Use for Street View API calls |
-| lat      | Float     | Latitude coordinate                | ~39    | Use for Street View API calls |
-| geometry | Point     | GeoSeries of coordinates           |        | Use for spatial analysis      |
+| Column number | Data type | Definition                              | Values                                           | Use                                   |
+|---------------|-----------|-----------------------------------------|--------------------------------------------------|---------------------------------------|
+| 1             | Int       | Class                                   | 0, 1, 2, 3 (for detection, I’ve removed classes) | Used to create classification folders |
+| 2             | Float     | x-coordinate of the bounding box center | 0-1 scaled relative to image width               | Detection target                      |
+| 3             | Float     | y-coordinate of the bounding box center | 0-1 scaled relative to image height              | Detection target                      |
+| 4             | Float     | Bounding box width                      | 0-1 scaled relative to image width               | Detection target                      |
+| 5             | Float     | Bounding box height                     | 0-1 scaled relative to image height              | Detection target                      |
 
 ## EDA
 
 See notebook: [../src/eda_v2.ipynb](../src/eda_v2.ipynb)
 
+## Model training and results
+
+After a lot of trial and error and testing out a few different
+frameworks, I settled on using Ultralytics YOLOv8 (Jocher, Chaurasia,
+and Qiu (2023)). The YOLO family of models have been developed over
+several years, and v8 is its latest iteration. These models are
+relatively fast, dividing images into grids and estimating
+classifications by region within those grids, avoiding more costly
+anchor box calculations. The v8 package comes with trainer, tuner, and
+predictor modules built in; has weights for a variety of computer vision
+tasks; and has a few specialized variations on the YOLO algorithm. I
+chose to use the package’s base YOLO model (for both detection and
+classification) and the RT-DETR model, a new, transformer-based model
+from Baidu (only available for detection). These models are pretrained
+on benchmark datasets such as COCO, so I utilized the weights they
+already had but fine-tuned them to my datasets; specifically,
+surveillance cameras are not a class in the major benchmark datasets, so
+I needed to adjust the models from being trained to detect 80 classes to
+detecting just one. See details on the original YOLO implementation in
+Redmon et al. (2016), and the RT-DETR model in Lv et al. (2023).
+
+Most of the project was done in Python, with some bash scripting to help
+with getting and processing data. The main Python packages I used were:
+
+- Pytorch with CUDA
+- PIL (for handling images)
+- openCV (for handling images)
+- ultralytics (models and YOLOv8 ecosystem of modules)
+- albumentations (augmentations used by ultralytics)
+- roboflow (interfacing with Roboflow platform)
+- wandb (uploading artifacts to Weights & Biases)
+- sahi (tiling for inference & data cleaning utilities)
+
+In addition to those packages, other tools I used were:
+
+- A Lenovo ThinkPad running Ubuntu 22.04 with 16 cores and 4GB GPU
+  (development and tinkering with models before running on Paperspace)
+- Roboflow (data management and augmentation)
+- Weights & Biases (tracking runs & storing training artifacts)
+- Paperspace (virtual machine with 8 CPUs, 16GB GPU, paid hourly)
+- conda (environment management between workspaces)
+- Hugging Face (hosting app)
+- Voila (converting demonstration notebook to an app)
+- Docker (containerization of the app)
+
+For both the detection and classification tasks, I used 70/20/10 splits
+for training, validation, and testing. I also created some variations on
+the data. One issue I found was that the images from Mapillary are about
+twice as big as the other two sources; cameras are already generally
+very small relative to their images, and this variation made it even
+more difficult. To fix this, I uploaded the datasets to Roboflow
+separately, then created 2x2 tiles of the Mapillary images before
+combining all the sources back together. This made the images come out
+to similar dimensions. I also created a version of the dataset where all
+images were cut into 3x3 tiles, again addressing the issue of detecting
+small objects.
+
+Altogether I trained 8 types of models for detection: for each
+architecture (YOLO and RT-DETR), I trained a base model, a model with
+all but the last few layers frozen, a model trained on tiled images, and
+a model using both freezing and tiling. From there, I chose candidates
+to continue tuning and training:
+
+- A YOLO model with medium-sized weights
+- YOLO with tiling
+- RT-DETR with freezing
+
+I found that the YOLO models are much faster to train—15 epochs can take
+less than 30 minutes—but are less accurate and fail to detect some
+cameras. Using the tiled dataset improved recall greatly, but doesn’t
+necessarily transfer well to full-sized images. RT-DETR takes about 4
+times as long, but is much more accurate. The main metric I used for
+comparison was mAP 50, though I also paid attention to recall as a
+metric that would be important in practice.
+
+<figure>
+<figcaption>
+Training results, YOLO & RT-DETR models
+</figcaption>
+<img src="./imgs/training_results_line.png" />
+</figure>
+
+I then tuned the 2 YOLO models using Ultralytics’ tuning module, which
+doesn’t seem to be fully implemented yet for RT-DETR. I also used the
+model that had trained on tiled images to tune on full-sized images to
+see how well it might transfer. However, tuning gave me pretty
+lackluster results that sometimes performed worse than the untuned
+models. This could be improved with more iterations and a more
+methodical approach to tuning; Weights & Biases has tools for tuning
+that use Bayesian probability for choosing hyperparameter values and
+would work on both architectures.
+
+<figure>
+<figcaption>
+Tuning results, YOLO variations only
+</figcaption>
+<img src="./imgs/tuning_results_box.png" />
+</figure>
+
+Because YOLO is a relatively small model and the cropped images for
+classification are often no more than 20 pixels on either size, I was
+able to do all the training and tuning for classification on my laptop’s
+GPU. There are two classes available (globe camera or directed camera),
+and these are only labeled on the small subset of images from Street
+View, yet the accuracy was quite good even with a small sample size. The
+YOLO classifier with medium weights achieves about 96% validation
+accuracy after training for 25 epochs, and training and validation takes
+just over a minute. However, many of the images are too small to meet
+YOLO’s minimum pixel size, shrinking the sample size even further.
+
+<figure>
+<figcaption>
+Confusion matrix, YOLO medium classifier, validation set
+</figcaption>
+<img src="./imgs/confusion_matrix.png" />
+</figure>
+
+## Demonstration
+
+I used 2 of the best models to build a demonstration, YOLO trained on
+tiled images and RT-DETR trained on tiled images with freezing. I used
+Voila to turn a Jupyter notebook into an interactive app, with
+JupyterLab widgets for controls. The app takes the text of a location,
+such as a street intersection, plus parameters for the image size,
+heading (angle), pitch (tilt), and field of view (zoom), and passes
+these to the Google Street View static API. This returns an image, which
+is then converted from bytes to a PIL Image object. The app then uses
+both models to detect surveillance cameras in the image, and plot the
+image with predicted bounding boxes overlaid; all three images are
+placed side by side for comparison. I chose these two models to showcase
+the differences in the architectures: the YOLO model runs quickly but,
+in my testing, misses some cameras; the RT-DETR model takes a few
+seconds to run, but catches more cameras. As it stands now, the RT-DETR
+model is probably too heavy and slow to be useful on a low-RAM machine
+or mobile device, or to make predictions in real time on video. I built
+this in a Docker container, then deployed it to Hugging Face Spaces,
+where it’s publicly available.
+
+## Conclusion
+
+Despite having many moving parts that needed to work together, I think
+this project was successful. I built models that can detect surveillance
+cameras in Street View images on demand and with a fair amount of
+accuracy. The main shortcoming here is in tuning: I appreciate having
+all the Ultralytics modules work together in one ecosystem, but their
+tuner was inadequate for getting better performance of these models with
+my limited equipment. I’d like to continue tuning, but switch most
+likely to Weights & Biases. The models would likely perform better if
+trained for longer—common benchmarks for comparing models often use 300
+epochs or more.
+
+I began dabbling in using sliced images for inference with SAHI (Akyon,
+Onur Altinuc, and Temizel (2022)); it was from reading the research
+behind that that I decided to tile my images, which turned out to work
+quite well. One drawback is that if this is done in the app, it might
+add more lag time to models that are already not as fast as I’d like.
+However, there are frameworks available for optimizing models to perform
+inference on smaller CPUs, which I haven’t done.
+
+Even though this is a decent sized dataset with the addition of the
+Mapillary images, it could still benefit from being larger. So far,
+though, these are the only research datasets I’ve found that have
+surveillance cameras labeled, and only Sheng, Yao, and Goel (2021) had
+them labeled with different classes. I might go through the images I
+already have and use the classification model to add class labels to the
+Mapillary and Objects365 images, as well as add labels for types of
+cameras more recently deployed, such as automated license plate readers.
+I also might use AI labeling assistants to label cameras in other
+streetscape datasets to create a larger training set.
+
+Finally, this is just a first step toward using deep learning to study
+the landscape of surveillance in Baltimore. The next major piece would
+be to sample street intersections, detect cameras and deduplicate the
+detections, and use the attached locations for spatial analysis.
+Mapillary already has object detections labeled on their mapping
+platform, including surveillance cameras, so this might just mean using
+their location data and updating or supplimenting it with predictions
+from these models.
+
+While it is inherently reactionary to be chasing down the state’s
+surveillance tools after they’ve been put up, I do feel there is a place
+in surveillance studies and movements for police accountability to
+implement open source data science developed by community members.
+
 ## References
 
 <div id="refs" class="references csl-bib-body hanging-indent">
 
-<div id="ref-Boeing2017" class="csl-entry">
+<div id="ref-A.O.T2022" class="csl-entry">
 
-Boeing, Geoff. 2017. “OSMnx: New Methods for Acquiring, Constructing,
-Analyzing, and Visualizing Complex Street Networks.” *Computers,
-Environment and Urban Systems* 65 (September): 126–39.
-<https://doi.org/10.1016/j.compenvurbsys.2017.05.004>.
+Akyon, Fatih Cagatay, Sinan Onur Altinuc, and Alptekin Temizel. 2022.
+“Slicing Aided Hyper Inference and Fine-Tuning for Small Object
+Detection.” In *2022 IEEE International Conference on Image Processing
+(ICIP)*, 966–70. <https://doi.org/10.1109/ICIP46576.2022.9897990>.
 
 </div>
 
@@ -220,6 +366,40 @@ Environment and Urban Systems* 65 (September): 126–39.
 
 Browne, Simone. 2015. *Dark Matters: On the Surveillance of Blackness*.
 Durham, NC: Duke University Press.
+
+</div>
+
+<div id="ref-J.C.Q2023" class="csl-entry">
+
+Jocher, Glenn, Ayush Chaurasia, and Jing Qiu. 2023. “YOLO by
+Ultralytics.” <https://github.com/ultralytics/ultralytics>.
+
+</div>
+
+<div id="ref-L.Z.X+2023" class="csl-entry">
+
+Lv, Wenyu, Yian Zhao, Shangliang Xu, Jinman Wei, Guanzhong Wang, Cheng
+Cui, Yuning Du, Qingqing Dang, and Yi Liu. 2023. “DETRs Beat YOLOs on
+<span class="nocase">Real-time Object Detection</span>.” arXiv.
+<https://doi.org/10.48550/arXiv.2304.08069>.
+
+</div>
+
+<div id="ref-N.O.R+2017" class="csl-entry">
+
+Neuhold, Gerhard, Tobias Ollmann, Samuel Rota Bulo, and Peter
+Kontschieder. 2017. “The Mapillary Vistas Dataset for Semantic
+Understanding of Street Scenes.” In *Proceedings of the IEEE
+International Conference on Computer Vision*, 4990–99.
+<https://openaccess.thecvf.com/content_iccv_2017/html/Neuhold_The_Mapillary_Vistas_ICCV_2017_paper.html>.
+
+</div>
+
+<div id="ref-R.D.G+2016" class="csl-entry">
+
+Redmon, Joseph, Santosh Divvala, Ross Girshick, and Ali Farhadi. 2016.
+“You Only Look Once: Unified, Real-Time Object Detection.” arXiv.
+<https://doi.org/10.48550/arXiv.1506.02640>.
 
 </div>
 

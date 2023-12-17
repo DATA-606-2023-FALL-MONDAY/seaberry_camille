@@ -7,10 +7,7 @@
 <link href="seaberry_final_pres_files/libs/quarto-html/tippy.css" rel="stylesheet">
 <link href="seaberry_final_pres_files/libs/quarto-html/light-border.css" rel="stylesheet">
 <link href="seaberry_final_pres_files/libs/quarto-html/quarto-html.min.css" rel="stylesheet" data-mode="light">
-<link href="seaberry_final_pres_files/libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="seaberry_final_pres_files/libs/quarto-contrib/glightbox/glightbox.min.js"></script>
-<link href="seaberry_final_pres_files/libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
-<link href="seaberry_final_pres_files/libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet"><meta charset="utf-8">
+<link href="seaberry_final_pres_files/libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="stylesheet" id="quarto-text-highlighting-styles"><meta charset="utf-8">
   <meta name="generator" content="quarto-1.4.330">
 
   <meta name="author" content="Camille Seaberry">
@@ -512,13 +509,13 @@ Camille Seaberry
 <div class="columns">
 <div class="column" style="width:40%;">
 <ul>
-<li>Ultralytics released YOLOv8 this year</li>
+<li>Ultralytics released YOLOv8 this year (<span class="citation" data-cites="J.C.Q2023">Jocher, Chaurasia, and Qiu (<a href="#/references" role="doc-biblioref" onclick="">2023</a>)</span>)</li>
 <li>Avoids anchor box calculations and comparisons of other detection models</li>
 </ul>
 </div><div class="column" style="width:60%;">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><a href="./imgs/yolo_diagram.gif" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="YOLOv1 diagram. @R.D.G+2016"><img data-src="./imgs/yolo_diagram.gif"></a></p>
+<p><img data-src="./imgs/yolo_diagram.gif"></p>
 <figcaption>YOLOv1 diagram. <span class="citation" data-cites="R.D.G+2016">Redmon et al. (<a href="#/references" role="doc-biblioref" onclick="">2016</a>)</span></figcaption>
 </figure>
 </div>
@@ -550,7 +547,7 @@ Camille Seaberry
 </div><div class="column">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><a href="./imgs/tile_ex.jpg" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Example tiled image"><img data-src="./imgs/tile_ex.jpg"></a></p>
+<p><img data-src="./imgs/tile_ex.jpg"></p>
 <figcaption>Example tiled image</figcaption>
 </figure>
 </div>
@@ -561,33 +558,28 @@ Camille Seaberry
 <h2>Results</h2>
 <h3 id="training-first-round-of-validation">Training &amp; first round of validation</h3>
 <p>YOLO works well on tiled images, but it will need to transfer to full-sized images to be useful</p>
-<div class="cell">
-<div class="cell-output-display">
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><a href="seaberry_final_pres_files/figure-revealjs/unnamed-chunk-2-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Training results - YOLO &amp; DETR models"><img data-src="seaberry_final_pres_files/figure-revealjs/unnamed-chunk-2-1.png" width="960"></a></p>
-<figcaption>Training results - YOLO &amp; DETR models</figcaption>
-</figure>
-</div>
-</div>
-</div>
-</section>
+
+<img data-src="seaberry_final_pres_files/figure-revealjs/unnamed-chunk-2-1.png" width="960" class="r-stretch quarto-figure-center"><p class="caption">Training results - YOLO &amp; DETR models</p></section>
 <section id="results-1" class="slide level2">
 <h2>Results</h2>
 <h3 id="validation-examples-detr-model">Validation examples, DETR model</h3>
 <div class="quarto-layout-panel">
 <div class="quarto-layout-row quarto-layout-valign-top">
-<div class="quarto-figure quarto-figure-center" style="flex-basis: 50.0%;justify-content: center;">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
+<div class="quarto-figure quarto-figure-center">
 <figure>
-<p><a href="./imgs/val_batch0_labels_detr.jpg" class="lightbox" data-gallery="quarto-lightbox-gallery-4" title="Validation labels"><img data-src="./imgs/val_batch0_labels_detr.jpg"></a></p>
+<p><img data-src="./imgs/val_batch0_labels_detr.jpg"></p>
 <figcaption>Validation labels</figcaption>
 </figure>
 </div>
-<div class="quarto-figure quarto-figure-center" style="flex-basis: 50.0%;justify-content: center;">
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
+<div class="quarto-figure quarto-figure-center">
 <figure>
-<p><a href="./imgs/val_batch0_pred_detr.jpg" class="lightbox" data-gallery="quarto-lightbox-gallery-5" title="Validation predictions"><img data-src="./imgs/val_batch0_pred_detr.jpg"></a></p>
+<p><img data-src="./imgs/val_batch0_pred_detr.jpg"></p>
 <figcaption>Validation predictions</figcaption>
 </figure>
+</div>
 </div>
 </div>
 </div>
@@ -595,17 +587,8 @@ Camille Seaberry
 <section id="results-2" class="slide level2">
 <h2>Results</h2>
 <h3 id="tuning">Tuning</h3>
-<div class="cell">
-<div class="cell-output-display">
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><a href="seaberry_final_pres_files/figure-revealjs/unnamed-chunk-3-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-6" title="Tuning results - YOLO variations only"><img data-src="seaberry_final_pres_files/figure-revealjs/unnamed-chunk-3-1.png" width="960"></a></p>
-<figcaption>Tuning results - YOLO variations only</figcaption>
-</figure>
-</div>
-</div>
-</div>
-</section>
+
+<img data-src="seaberry_final_pres_files/figure-revealjs/unnamed-chunk-3-1.png" width="960" class="r-stretch quarto-figure-center"><p class="caption">Tuning results - YOLO variations only</p></section>
 <section id="results-3" class="slide level2">
 <h2>Results</h2>
 <h3 id="tuningwhat-went-wrong">Tuning—what went wrong?</h3>
@@ -627,11 +610,15 @@ Camille Seaberry
 <li>However, this was only a very small dataset</li>
 </ul>
 </div><div class="column" style="width:60%;">
+<div class="cell">
+<div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><a href="./imgs/yolo_m_matrix.png" class="lightbox" data-gallery="quarto-lightbox-gallery-7" title="Confusion matrix, YOLO medium"><img data-src="./imgs/yolo_m_matrix.png"></a></p>
-<figcaption>Confusion matrix, YOLO medium</figcaption>
+<p><img data-src="seaberry_final_pres_files/figure-revealjs/unnamed-chunk-4-1.png" width="576"></p>
+<figcaption>Confusion matrix, YOLO medium, validation set</figcaption>
 </figure>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -639,12 +626,13 @@ Camille Seaberry
 <section id="results-5" class="slide level2">
 <h2>Results</h2>
 <h3 id="inference">Inference</h3>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><a href="./imgs/demo_loch_raven.png" class="lightbox" data-gallery="quarto-lightbox-gallery-8" title="Screenshot of demo"><img data-src="./imgs/demo_loch_raven.png"></a></p>
-<figcaption>Screenshot of demo</figcaption>
-</figure>
-</div>
+
+<img data-src="./imgs/demo_loch_raven.png" class="r-stretch quarto-figure-center"><p class="caption">Screenshot of an earlier demo</p></section>
+<section id="demo" class="slide level2">
+<h2>Demo</h2>
+<iframe src="https://camilleseab-surveillance.hf.space" frameborder="0" width="850" height="450">
+</iframe>
+<p>Working interactive demo: <a href="https://camilleseab-surveillance.hf.space">https://camilleseab-surveillance.hf.space</a></p>
 </section>
 <section id="challenges" class="slide level2">
 <h2>Challenges</h2>
@@ -688,7 +676,7 @@ Camille Seaberry
 <li>Inherently reactionary to be chasing surveillance state after its infrastructure is built</li>
 </ul>
 </section>
-<section id="references" class="slide level2 smaller scrollable">
+<section id="references" class="slide level2 smaller scrollable" style="font-size: 20px;">
 <h2>References</h2>
 <div class="footer footer-default">
 
@@ -696,6 +684,12 @@ Camille Seaberry
 <div id="refs" class="references csl-bib-body hanging-indent" role="list">
 <div id="ref-A.O.T2022" class="csl-entry" role="listitem">
 Akyon, Fatih Cagatay, Sinan Onur Altinuc, and Alptekin Temizel. 2022. <span>“Slicing <span>Aided Hyper Inference</span> and <span>Fine-Tuning</span> for <span>Small Object Detection</span>.”</span> In <em>2022 <span>IEEE International Conference</span> on <span>Image Processing</span> (<span>ICIP</span>)</em>, 966–70. <a href="https://doi.org/10.1109/ICIP46576.2022.9897990">https://doi.org/10.1109/ICIP46576.2022.9897990</a>.
+</div>
+<div id="ref-Browne2015" class="csl-entry" role="listitem">
+Browne, Simone. 2015. <em>Dark <span>Matters</span>: <span>On</span> the <span>Surveillance</span> of <span>Blackness</span></em>. <span>Durham, NC</span>: <span>Duke University Press</span>.
+</div>
+<div id="ref-J.C.Q2023" class="csl-entry" role="listitem">
+Jocher, Glenn, Ayush Chaurasia, and Jing Qiu. 2023. <span>“<span>YOLO</span> by <span>Ultralytics</span>.”</span> <a href="https://github.com/ultralytics/ultralytics">https://github.com/ultralytics/ultralytics</a>.
 </div>
 <div id="ref-N.O.R+2017" class="csl-entry" role="listitem">
 Neuhold, Gerhard, Tobias Ollmann, Samuel Rota Bulo, and Peter Kontschieder. 2017. <span>“The <span>Mapillary Vistas Dataset</span> for <span>Semantic Understanding</span> of <span>Street Scenes</span>.”</span> In <em>Proceedings of the <span>IEEE International Conference</span> on <span>Computer Vision</span></em>, 4990–99. <a href="https://openaccess.thecvf.com/content_iccv_2017/html/Neuhold_The_Mapillary_Vistas_ICCV_2017_paper.html">https://openaccess.thecvf.com/content_iccv_2017/html/Neuhold_The_Mapillary_Vistas_ICCV_2017_paper.html</a>.
@@ -708,6 +702,9 @@ Shao, Shuai, Zeming Li, Tianyuan Zhang, Chao Peng, Gang Yu, Xiangyu Zhang, Jing 
 </div>
 <div id="ref-S.Y.G2021" class="csl-entry" role="listitem">
 Sheng, Hao, Keniel Yao, and Sharad Goel. 2021. <span>“Surveilling <span>Surveillance</span>: <span>Estimating</span> the <span>Prevalence</span> of <span>Surveillance Cameras</span> with <span>Street View Data</span>.”</span> In <em>Proceedings of the 2021 <span>AAAI</span>/<span>ACM Conference</span> on <span>AI</span>, <span>Ethics</span>, and <span>Society</span></em>, 221–30. <span>AIES</span> ’21. <span>New York, NY, USA</span>: <span>Association for Computing Machinery</span>. <a href="https://doi.org/10.1145/3461702.3462525">https://doi.org/10.1145/3461702.3462525</a>.
+</div>
+<div id="ref-T.C.L+2021a" class="csl-entry" role="listitem">
+Turtiainen, Hannu, Andrei Costin, Tuomo Lahtinen, Lauri Sintonen, and Timo Hamalainen. 2021. <span>“Towards Large-Scale, Automated, Accurate Detection of <span>CCTV</span> Camera Objects Using Computer Vision. <span>Applications</span> and Implications for Privacy, Safety, and Cybersecurity. (<span>Preprint</span>).”</span> <span>arXiv</span>. <a href="http://arxiv.org/abs/2006.03870">http://arxiv.org/abs/2006.03870</a>.
 </div>
 </div>
 </section>
@@ -1113,7 +1110,6 @@ Sheng, Hao, Keniel Yao, and Sharad Goel. 2021. <span>“Surveilling <span>Survei
       }
     });
     </script>
-    
     
 
 </body></html>
