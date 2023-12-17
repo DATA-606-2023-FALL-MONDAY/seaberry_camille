@@ -101,26 +101,27 @@ Roboflow by cropping the full-sized images to their objects’ bounding
 boxes. Because data came from different sources, standardizing and
 unifying annotations was a major task in this project.
 
-Full-sized images’ metadata are in YOLOv8 format, where each image has
-an associated text file giving bounding box coordinates and labels.
-Alongside this metadata are the folders of images. Cropped images are
-arranged into folders by class, following the Pytorch `ImageFolder`
-model.
+Full-sized images’ metadata are in [YOLOv8
+format](https://roboflow.com/formats/yolov8-pytorch-txt), where each
+image has an associated text file giving bounding box coordinates and
+labels. Alongside this metadata are the folders of images. Cropped
+images are arranged into folders by class, following the Pytorch
+`ImageFolder` model.
 
-#### Source
+### Source
 
 Sheng, Yao, and Goel (2021); Shao et al. (2019); and Neuhold et al.
 (2017), with augmentation and annotation standardization done on the
 Roboflow platform.
 
-#### Size (jpg files)
+### Size (jpg files)
 
 - Full-size images: training, validation, and testing sets are 221MB,
   62MB, and 34MB, respectively
 - Cropped images: training, validation, and testing sets are 4MB, 664kB,
   and 328kB, respectively
 
-#### Dimensions after cleaning
+### Dimensions after cleaning
 
 Full-sized images and annotations:
 
@@ -144,11 +145,11 @@ Cropped images:
 |          | Validation |    84 |
 |          | Testing    |    32 |
 
-#### Time period
+### Time period
 
 N/A
 
-#### Data dictionary
+### Data dictionary
 
 In the YOLOv8 format, each image has a text file of one or more
 annotations with no headings. One row = one marked camera
@@ -163,7 +164,370 @@ annotations with no headings. One row = one marked camera
 
 ## EDA
 
-See notebook: [../src/eda_v2.ipynb](../src/eda_v2.ipynb)
+See standalone notebook: [../src/eda_v2.ipynb](../src/eda_v2.ipynb)
+
+### EDA on training data
+
+#### Metadata
+
+Beyond the data encoded in images, much of the information about the
+dataset comes from the annotations. By far, most images have just 1
+bounding box, but a few images have 20 or more boxes; images with many
+boxes tend to be indoor scenes from Object365. When creating the
+datasets on Roboflow, I included a filter that requires at least 85% of
+images in each set have a bounding box in order to deal with the way the
+Vista images were cut. 11% of images have no bounding boxes. On average,
+bounding boxes only take up about 2% of the width and height of the
+image; this is why I am also working with a tiled version of the images.
+
+Cropped images contain one of two classes, either globe cameras or
+directed cameras. There are slightly more directed cameras than globe
+cameras across each split. One important note is that because the
+cameras within images are so small, the cropped images tend to be very
+small. YOLO has a minimum size needed for classification, and many of
+the cropped images are too small. Directed cameras tend to be much wider
+than they are tall, while globe cameras have bounding boxes closer to
+square.
+
+Metadata assembled from label text files
+
+<div class="quarto-embed-nb-cell"
+notebook="/home/camille/code/capstone/src/eda_v2.ipynb"
+notebook-title="Surveillance cameras EDA"
+notebook-cellId="cell-lbl-meta">
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+&#10;    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+&#10;    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+
+|                                                                    | x        | y        | w        | h        |
+|--------------------------------------------------------------------|----------|----------|----------|----------|
+| id                                                                 |          |          |          |          |
+| jr5tX8IrUx1b6JGw7TzGPw_jpg.rf.91a83d31193335775ff28d05edf133ac     | 0.889062 | 0.721875 | 0.060937 | 0.314844 |
+| jr5tX8IrUx1b6JGw7TzGPw_jpg.rf.91a83d31193335775ff28d05edf133ac     | 0.010156 | 0.010156 | 0.024219 | 0.015625 |
+| objects365_v1_00000926_jpg.rf.0af247e70bf314b1ace00ea1d0b04918     | 0.315625 | 0.331250 | 0.010937 | 0.012500 |
+| IZXqv8lvtYUn1SOfZQ7N9w_269_jpg.rf.817322bfc5e0795c4793f783c53e05fa | 0.639844 | 0.402344 | 0.014063 | 0.017188 |
+| XXWEd36K6hP98YXNDujDtw_jpg.rf.a91e9cb66cf5aaccdeea2831b038ba06     | NaN      | NaN      | NaN      | NaN      |
+
+</div>
+
+</div>
+
+Average image width and height by class, cropped training images
+
+<div class="quarto-embed-nb-cell"
+notebook="/home/camille/code/capstone/src/eda_v2.ipynb"
+notebook-title="Surveillance cameras EDA"
+notebook-cellId="cell-crop-meta">
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+&#10;    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+&#10;    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+
+|          | w         | h         |
+|----------|-----------|-----------|
+| type     |           |           |
+| directed | 13.007737 | 9.323017  |
+| globe    | 8.590234  | 10.380042 |
+
+</div>
+
+</div>
+
+Summary statistics of image dimensions and bounding box placement, full
+training images
+
+<div class="quarto-embed-nb-cell"
+notebook="/home/camille/code/capstone/src/eda_v2.ipynb"
+notebook-title="Surveillance cameras EDA"
+notebook-cellId="cell-dim-stats">
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+&#10;    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+&#10;    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+
+|       | x           | y           | w           | h           |
+|-------|-------------|-------------|-------------|-------------|
+| count | 5278.000000 | 5278.000000 | 5278.000000 | 5278.000000 |
+| mean  | 0.379110    | 0.362457    | 0.117132    | 0.120531    |
+| std   | 0.318495    | 0.324025    | 0.228987    | 0.230606    |
+| min   | 0.001563    | 0.000781    | 0.000781    | 0.000781    |
+| 25%   | 0.039844    | 0.035937    | 0.010156    | 0.010937    |
+| 50%   | 0.335938    | 0.296094    | 0.017188    | 0.020313    |
+| 75%   | 0.657031    | 0.637500    | 0.044531    | 0.054688    |
+| max   | 0.998437    | 0.999219    | 0.999219    | 0.999219    |
+
+</div>
+
+</div>
+
+Descriptive statistics of number of bounding boxes per full-size
+training image
+
+<div class="quarto-embed-nb-cell"
+notebook="/home/camille/code/capstone/src/eda_v2.ipynb"
+notebook-title="Surveillance cameras EDA"
+notebook-cellId="cell-boxes-per-img">
+
+    count    4068.000000
+    mean        1.297443
+    std         1.304801
+    min         0.000000
+    25%         1.000000
+    50%         1.000000
+    75%         1.000000
+    max        24.000000
+    Name: n_boxes, dtype: float64
+
+</div>
+
+About 12% of full-size training images have no labeled bounding boxes.
+This is advantageous because it will help the models identify cases
+where no detections should be made.
+
+<div class="quarto-embed-nb-cell"
+notebook="/home/camille/code/capstone/src/eda_v2.ipynb"
+notebook-title="Surveillance cameras EDA"
+notebook-cellId="cell-boxes-dist">
+
+<img src="report_files/figure-commonmark/boxes-dist-output-1.png"
+id="boxes-dist" />
+
+</div>
+
+The vast majority of images have only 1 or 2 cameras marked in them.
+Some have upwards of 15; checking for anomalies, it does seem realistic
+for some indoor scenes from the Objects365 data to have many cameras.
+For example, of the 6 training images with 15 or more cameras marked,
+all but 1 are checkout areas of big box stores, so it makes sense that
+so many cameras would be in close proximity. If there were more of these
+extreme values I might filter some out, since this is a situation that’s
+unlikely for the Street View images I want to use for inference, but
+training shouldn’t be thrown off by so few images with more than 3 or so
+cameras.
+
+<div class="quarto-embed-nb-cell"
+notebook="/home/camille/code/capstone/src/eda_v2.ipynb"
+notebook-title="Surveillance cameras EDA"
+notebook-cellId="cell-many-cams">
+
+<img src="report_files/figure-commonmark/many-cams-output-1.png"
+id="many-cams" />
+
+</div>
+
+### Analysis of training images for detection
+
+I’m interested in how the images are structured—color, shape, variety.
+Street images (both Google Street View and Mapillary Vista) in
+particular have clear patterns by design, with a zoomed out panorama
+shot of a street that includes the road, sidewalks, buildings, and often
+a view of the sky, and are generally taken on non-rainy days. The Street
+View images all come from cities chosen by the Stanford researchers, so
+they tend to have more gray and beige colors than rural or suburban
+shots might. Even though the cameras in the Street View images tend to
+be very small, they’re also pretty uniform in color and shape (dark
+globe or square for the camera, light casing).
+
+Mapillary images are much larger (median dimensions are 3264 x 2448
+pixels), so cameras are larger but also can be washed out by their
+surroundings. To deal with that, I’ve kept the first Street View and
+Objects dataset separate from the Vista one on Roboflow; I then used the
+platform to tile each Vista image into four smaller ones, making them of
+more comparable size to the first set. My training script downloads
+these two datasets separately, then combines them by training /
+validation / testing splits, making a dataset that is more uniform in
+size but still varied in content.
+
+#### Color
+
+Because these are the types of images I’d like to run inference on, the
+level of predictability in the structure and colors might be beneficial,
+because new images will be so reliably similar to the ones the models
+are trained on. However, this might also have drawbacks: for example,
+Street View images are taken during the daytime, so a model trained on
+SV images likely won’t perform well at night, and maybe won’t do as well
+in different background (more rural or suburban scenes, indoors, etc).
+
+Here I’m focusing on street scene images because they form a sort of
+archetype for inference. With a sample of 500 images, I analyze the
+distribution of colors across the sample with histograms. Within the RGB
+space, the distributions are most heavily concentrated around middle
+values of the three channels, with a spike of strong blue colors
+(presumably because the sky is shown in many photos).
+
+To look at this differently, I use k-means clustering to boil the images
+down to their most dominant color (using k = 1), then view the
+distribution of those dominant colors, most of which are grays and light
+blues. This isn’t necessarily the average of the images’ red, green, and
+blue components, but the point in color space at which the k-means
+clustering algorithm picked its center.
+
+Then I posterize images with k = 3, as a qualitative view of not just
+the one most dominant color, but the top few. Colors are clustered per
+image, not across the sample, but because of their similarities they all
+end up with similar palettes predominantly of beige-gray, light blue,
+and off white.
+
+<div class="quarto-embed-nb-cell"
+notebook="/home/camille/code/capstone/src/eda_v2.ipynb"
+notebook-title="Surveillance cameras EDA"
+notebook-cellId="cell-img-samp">
+
+<img src="report_files/figure-commonmark/img-samp-output-1.png"
+id="img-samp" />
+
+</div>
+
+<div class="quarto-embed-nb-cell"
+notebook="/home/camille/code/capstone/src/eda_v2.ipynb"
+notebook-title="Surveillance cameras EDA"
+notebook-cellId="cell-color-hist">
+
+<img src="report_files/figure-commonmark/color-hist-output-1.png"
+id="color-hist" />
+
+</div>
+
+<div class="quarto-embed-nb-cell"
+notebook="/home/camille/code/capstone/src/eda_v2.ipynb"
+notebook-title="Surveillance cameras EDA"
+notebook-cellId="cell-posterize">
+
+<img src="report_files/figure-commonmark/posterize-output-1.png"
+id="posterize-1" />
+
+<img src="report_files/figure-commonmark/posterize-output-2.png"
+id="posterize-2" />
+
+</div>
+
+<div class="quarto-embed-nb-cell"
+notebook="/home/camille/code/capstone/src/eda_v2.ipynb"
+notebook-title="Surveillance cameras EDA"
+notebook-cellId="cell-posterize2">
+
+<img src="report_files/figure-commonmark/posterize2-output-1.png"
+id="posterize2" />
+
+</div>
+
+#### Shape
+
+Next I’m interested in the structure of the image scenes. I use
+principal components analysis (PCA) to reduce grayscale versions of the
+images to fewer dimensions and mimic the eigenfaces used in facial
+recognition exercises. The first few components create rather spooky
+street scenes, with elements that hint at roads, curbs, crosswalks
+(striping pattern in the forefront), building and windows, shapes that
+might be overpasses or darker skies, and parked cars. Some also retain
+the Google watermark in the bottom left corner. The captured PCs can
+then be used to reconstruct images.
+
+While this helps with understanding the image composition overall,
+because the cameras are so small I don’t think this will be a very
+useful technique in camera detection.
+
+<div class="quarto-embed-nb-cell"
+notebook="/home/camille/code/capstone/src/eda_v2.ipynb"
+notebook-title="Surveillance cameras EDA" notebook-cellId="cell-pca">
+
+<img src="report_files/figure-commonmark/pca-output-1.png" id="pca" />
+
+</div>
+
+<div class="quarto-embed-nb-cell"
+notebook="/home/camille/code/capstone/src/eda_v2.ipynb"
+notebook-title="Surveillance cameras EDA"
+notebook-cellId="cell-pca-recon">
+
+<img src="report_files/figure-commonmark/pca-recon-output-1.png"
+id="pca-recon" />
+
+</div>
+
+#### Feature mapping
+
+As a more advanced version of the eigenstreets, I am also curious as to
+how the images might decompose using simple neural networks. I’ll be
+using more complex pretrained models for object detection later, but for
+feature mapping a multilayer perceptron will suffice. However, for EDA
+I’m just trying this out with scikit-learn training a very weak MLP
+without using my GPU, which yields features similar to the eigenstreets.
+It’s a bit artificial, since for the full size images I don’t expect to
+be doing classification anyway, and only trained on this sample of 500
+images without augmentation.
+
+<div class="quarto-embed-nb-cell"
+notebook="/home/camille/code/capstone/src/eda_v2.ipynb"
+notebook-title="Surveillance cameras EDA"
+notebook-cellId="cell-features">
+
+<img src="report_files/figure-commonmark/features-output-1.png"
+id="features" />
+
+</div>
+
+### Classification
+
+Finally, a sample of cropped images:
+
+<div class="quarto-embed-nb-cell"
+notebook="/home/camille/code/capstone/src/eda_v2.ipynb"
+notebook-title="Surveillance cameras EDA"
+notebook-cellId="cell-crop-samp">
+
+<img src="report_files/figure-commonmark/crop-samp-output-1.png"
+id="crop-samp-1" />
+
+<img src="report_files/figure-commonmark/crop-samp-output-2.png"
+id="crop-samp-2" />
+
+</div>
+
+<div class="quarto-embed-nb-cell"
+notebook="/home/camille/code/capstone/src/eda_v2.ipynb"
+notebook-title="Surveillance cameras EDA"
+notebook-cellId="cell-crop-scatter">
+
+<img src="report_files/figure-commonmark/crop-scatter-output-1.png"
+id="crop-scatter" />
+
+</div>
+
+While I’m using deep learning for both object detection and
+classification, the bounding boxes seem like they might be varied enough
+by category to use simpler machine learning techniques to build a
+reasonable classifier. For example, with no tuning, both naive Bayes and
+random forest classifiers perform fairly well, yielding accuracy scores
+of 0.75 and 0.88, respectively.
 
 ## Model training and results
 
@@ -192,11 +556,13 @@ with getting and processing data. The main Python packages I used were:
 - Pytorch with CUDA
 - PIL (for handling images)
 - openCV (for handling images)
+- pandas (data analysis during EDA)
 - ultralytics (models and YOLOv8 ecosystem of modules)
 - albumentations (augmentations used by ultralytics)
 - roboflow (interfacing with Roboflow platform)
 - wandb (uploading artifacts to Weights & Biases)
 - sahi (tiling for inference & data cleaning utilities)
+- ggplot2 (R, plotting)
 
 In addition to those packages, other tools I used were:
 
@@ -301,7 +667,15 @@ seconds to run, but catches more cameras. As it stands now, the RT-DETR
 model is probably too heavy and slow to be useful on a low-RAM machine
 or mobile device, or to make predictions in real time on video. I built
 this in a Docker container, then deployed it to Hugging Face Spaces,
-where it’s publicly available.
+where it’s publicly available:
+https://camilleseab-surveillance.hf.space/.
+
+<figure>
+<figcaption>
+Screenshot from app
+</figcaption>
+<img src="./imgs/demo_north_ave.png" />
+</figure>
 
 ## Conclusion
 
