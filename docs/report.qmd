@@ -12,10 +12,11 @@ Prepared for UMBC Data Science Master's Degree Capstone with Dr. Chaojie Wang, F
 - Code: https://github.com/DATA-606-2023-FALL-MONDAY/seaberry_camille
 - Presentation: 
   - Interactive: https://camille-s.github.io/capstone_pres 
-  - Static: https://camille-s.github.io/capstone_pres/seaberry_slides.pdf 
+  - Static: https://camille-s.github.io/capstone_pres/seaberry_slides.pdf or https://github.com/DATA-606-2023-FALL-MONDAY/seaberry_camille/blob/main/docs/seaberry_final_pres.pdf
 - App: 
   - Deployment: https://camilleseab-surveillance.hf.space/
   - Code: https://huggingface.co/spaces/camilleseab/surveillance/tree/main
+- Video: https://youtu.be/r8SD8kEfhgw
 - Github: https://github.com/camille-s
 
     
@@ -36,6 +37,8 @@ Therefore my **major research questions are:**
 1. How accurately can deep learning models detect surveillance cameras in street images?
 2. How accurately can deep learning models classify types of surveillance cameras?
 
+---
+
 ## Data
 
 This project uses several non-tabular data sources. As the main part of this project is object detection in images, the images' pixel data will become the features. In the first task (detection), the target is the bounding box of the detected camera. In the second (classification), the target is the category of camera. 
@@ -45,6 +48,14 @@ Once I have locations of cameras from a sample of intersections, the target woul
 In the first version of this project, I had two data sources, but I recently added a third. Labeled images now come from Google Street View (via @S.Y.G2021), the Objects365 dataset (@S.L.Z+2019), and the Mapillary Vistas dataset (@N.O.R+2017). There are two types of images, full-sized images (from all 3 sources) and cropped images (from Street View only). The cropped images were made in Roboflow by cropping the full-sized images to their objects' bounding boxes. Because data came from different sources, standardizing and unifying annotations was a major task in this project. 
 
 Full-sized images' metadata are in [YOLOv8 format](https://roboflow.com/formats/yolov8-pytorch-txt), where each image has an associated text file giving bounding box coordinates and labels. Alongside this metadata are the folders of images. Cropped images are arranged into folders by class, following the Pytorch `ImageFolder` model.
+
+The datasets as I've assembled them are in public Roboflow projects:
+
+1. [Street View and Objects365 images for detection](https://universe.roboflow.com/seaberry/cap-detect)
+2. [Mapillary Vistas images for detection](https://universe.roboflow.com/seaberry/vista-detect)
+3. [Street View images cropped for classification, derived from dataset #1](https://universe.roboflow.com/seaberry/cap-class)
+
+Note that not all images on the platform will end up being used, as tiled images are filtered so 85% in the final train/validate/test splits have annotations.
 
 ### Source 
 
@@ -110,7 +121,7 @@ In the YOLOv8 format, each image has a text file of one or more annotations with
 | 4             | Float     | Bounding box width                      | 0-1 scaled relative to image width               | Detection target                      | 
 | 5             | Float     | Bounding box height                     | 0-1 scaled relative to image height              | Detection target                      | 
 
-
+---
 
 ## EDA
 
@@ -120,7 +131,7 @@ See standalone notebook: [../src/eda_v2.ipynb](../src/eda_v2.ipynb)
 
 #### Metadata
 
-Beyond the data encoded in images, much of the information about the dataset comes from the annotations. By far, most images have just 1 bounding box, but a few images have 20 or more boxes; images with many boxes tend to be indoor scenes from Object365. When creating the datasets on Roboflow, I included a filter that requires at least 85% of images in each set have a bounding box in order to deal with the way the Vista images were cut. 11% of images have no bounding boxes. On average, bounding boxes only take up about 2% of the width and height of the image; this is why I am also working with a tiled version of the images.
+Beyond the data encoded in images, much of the information about the dataset comes from the annotations. By far, most images have just 1 bounding box, but a few images have 20 or more boxes; images with many boxes tend to be indoor scenes from Objects365. When creating the datasets on Roboflow, I included a filter that requires at least 85% of images in each set have a bounding box in order to deal with the way the Vista images were cut. 11% of images have no bounding boxes. On average, bounding boxes only take up about 2% of the width and height of the image; this is why I am also working with a tiled version of the images.
 
 Cropped images contain one of two classes, either globe cameras or directed cameras. There are slightly more directed cameras than globe cameras across each split. One important note is that because the cameras within images are so small, the cropped images tend to be very small. YOLO has a minimum size needed for classification, and many of the cropped images are too small. Directed cameras tend to be much wider than they are tall, while globe cameras have bounding boxes closer to square.
 
@@ -198,7 +209,7 @@ Finally, a sample of cropped images:
 
 While I'm using deep learning for both object detection and classification, the bounding boxes seem like they might be varied enough by category to use simpler machine learning techniques to build a reasonable classifier. For example, with no tuning, both naive Bayes and random forest classifiers perform fairly well, yielding accuracy scores of 0.75 and 0.88, respectively.
 
-
+---
 
 ## Model training and results
 
@@ -257,6 +268,8 @@ Because YOLO is a relatively small model and the cropped images for classificati
   <img src="./imgs/confusion_matrix.png" />
 </figure>
 
+---
+
 ## Demonstration
 
 I used 2 of the best models to build a demonstration, YOLO trained on tiled images and RT-DETR trained on tiled images with freezing. I used Voila to turn a Jupyter notebook into an interactive app, with JupyterLab widgets for controls. The app takes the text of a location, such as a street intersection, plus parameters for the image size, heading (angle), pitch (tilt), and field of view (zoom), and passes these to the Google Street View static API. This returns an image, which is then converted from bytes to a PIL Image object. The app then uses both models to detect surveillance cameras in the image, and plot the image with predicted bounding boxes overlaid; all three images are placed side by side for comparison. I chose these two models to showcase the differences in the architectures: the YOLO model runs quickly but, in my testing, misses some cameras; the RT-DETR model takes a few seconds to run, but catches more cameras. As it stands now, the RT-DETR model is probably too heavy and slow to be useful on a low-RAM machine or mobile device, or to make predictions in real time on video. I built this in a Docker container, then deployed it to Hugging Face Spaces, where it's publicly available: https://camilleseab-surveillance.hf.space/.
@@ -265,6 +278,8 @@ I used 2 of the best models to build a demonstration, YOLO trained on tiled imag
   <figcaption>Screenshot from app</figcaption>
   <img src="./imgs/demo_north_ave.png" />
 </figure>
+
+---
 
 ## Conclusion
 
@@ -277,6 +292,8 @@ Even though this is a decent sized dataset with the addition of the Mapillary im
 Finally, this is just a first step toward using deep learning to study the landscape of surveillance in Baltimore. The next major piece would be to sample street intersections, detect cameras and deduplicate the detections, and use the attached locations for spatial analysis. Mapillary already has object detections labeled on their mapping platform, including surveillance cameras, so this might just mean using their location data and updating or supplimenting it with predictions from these models.
 
 While it is inherently reactionary to be chasing down the state's surveillance tools after they've been put up, I do feel there is a place in surveillance studies and movements for police accountability to implement open source data science developed by community members. 
+
+---
 
 ## References
 

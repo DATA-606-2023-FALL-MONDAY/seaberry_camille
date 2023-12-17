@@ -8,11 +8,13 @@ Wang, Fall 2023
 - Presentation:
   - Interactive: https://camille-s.github.io/capstone_pres
   - Static:
-    https://camille-s.github.io/capstone_pres/seaberry_slides.pdf
+    https://camille-s.github.io/capstone_pres/seaberry_slides.pdf or
+    https://github.com/DATA-606-2023-FALL-MONDAY/seaberry_camille/blob/main/docs/seaberry_final_pres.pdf
 - App:
   - Deployment: https://camilleseab-surveillance.hf.space/
   - Code:
     https://huggingface.co/spaces/camilleseab/surveillance/tree/main
+- Video: https://youtu.be/r8SD8kEfhgw
 - Github: https://github.com/camille-s
 
 ## Background
@@ -78,6 +80,8 @@ Therefore my **major research questions are:**
 2.  How accurately can deep learning models classify types of
     surveillance cameras?
 
+------------------------------------------------------------------------
+
 ## Data
 
 This project uses several non-tabular data sources. As the main part of
@@ -107,6 +111,19 @@ image has an associated text file giving bounding box coordinates and
 labels. Alongside this metadata are the folders of images. Cropped
 images are arranged into folders by class, following the Pytorch
 `ImageFolder` model.
+
+The datasets as I’ve assembled them are in public Roboflow projects:
+
+1.  [Street View and Objects365 images for
+    detection](https://universe.roboflow.com/seaberry/cap-detect)
+2.  [Mapillary Vistas images for
+    detection](https://universe.roboflow.com/seaberry/vista-detect)
+3.  [Street View images cropped for classification, derived from dataset
+    \#1](https://universe.roboflow.com/seaberry/cap-class)
+
+Note that not all images on the platform will end up being used, as
+tiled images are filtered so 85% in the final train/validate/test splits
+have annotations.
 
 ### Source
 
@@ -162,6 +179,8 @@ annotations with no headings. One row = one marked camera
 | 4             | Float     | Bounding box width                      | 0-1 scaled relative to image width               | Detection target                      |
 | 5             | Float     | Bounding box height                     | 0-1 scaled relative to image height              | Detection target                      |
 
+------------------------------------------------------------------------
+
 ## EDA
 
 See standalone notebook: [../src/eda_v2.ipynb](../src/eda_v2.ipynb)
@@ -173,7 +192,7 @@ See standalone notebook: [../src/eda_v2.ipynb](../src/eda_v2.ipynb)
 Beyond the data encoded in images, much of the information about the
 dataset comes from the annotations. By far, most images have just 1
 bounding box, but a few images have 20 or more boxes; images with many
-boxes tend to be indoor scenes from Object365. When creating the
+boxes tend to be indoor scenes from Objects365. When creating the
 datasets on Roboflow, I included a filter that requires at least 85% of
 images in each set have a bounding box in order to deal with the way the
 Vista images were cut. 11% of images have no bounding boxes. On average,
@@ -529,6 +548,8 @@ reasonable classifier. For example, with no tuning, both naive Bayes and
 random forest classifiers perform fairly well, yielding accuracy scores
 of 0.75 and 0.88, respectively.
 
+------------------------------------------------------------------------
+
 ## Model training and results
 
 After a lot of trial and error and testing out a few different
@@ -648,6 +669,8 @@ Confusion matrix, YOLO medium classifier, validation set
 <img src="./imgs/confusion_matrix.png" />
 </figure>
 
+------------------------------------------------------------------------
+
 ## Demonstration
 
 I used 2 of the best models to build a demonstration, YOLO trained on
@@ -676,6 +699,8 @@ Screenshot from app
 </figcaption>
 <img src="./imgs/demo_north_ave.png" />
 </figure>
+
+------------------------------------------------------------------------
 
 ## Conclusion
 
@@ -722,6 +747,8 @@ While it is inherently reactionary to be chasing down the state’s
 surveillance tools after they’ve been put up, I do feel there is a place
 in surveillance studies and movements for police accountability to
 implement open source data science developed by community members.
+
+------------------------------------------------------------------------
 
 ## References
 
