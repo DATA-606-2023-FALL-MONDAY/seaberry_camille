@@ -3,6 +3,7 @@
 
 Prepared for UMBC Data Science Master's Degree Capstone with Dr. Chaojie Wang, Fall 2023
 
+- Report: https://github.com/DATA-606-2023-FALL-MONDAY/seaberry_camille/blob/main/docs/report.md
 - Code: https://github.com/DATA-606-2023-FALL-MONDAY/seaberry_camille
 - Presentation: 
   - Interactive: https://camille-s.github.io/capstone_pres 
